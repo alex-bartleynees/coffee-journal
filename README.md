@@ -1,4 +1,4 @@
-# Crema — Coffee Journal
+# Bloom — Coffee Journal
 
 A local-first coffee brewing and tasting journal: track beans, grinders, and
 individual brews (espresso, V60, AeroPress) with recipe data, tasting notes,
