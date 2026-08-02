@@ -17,7 +17,7 @@
 	<a class="brand" href="/">
 		<div class="brand-mark">c</div>
 		<div>
-			<div class="brand-name">Crema</div>
+			<div class="brand-name">Bloom</div>
 			<div class="brand-sub">Coffee Journal</div>
 		</div>
 	</a>

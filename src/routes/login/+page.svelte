@@ -16,7 +16,7 @@
 </script>
 
 <div class="login-screen">
-	<div class="crema-swirl" aria-hidden="true">
+	<div class="bloom-swirl" aria-hidden="true">
 		<div class="ring ring-1"></div>
 		<div class="ring ring-2"></div>
 		<div class="ring ring-3"></div>
@@ -26,7 +26,7 @@
 		<a class="brand" href="/">
 			<div class="brand-mark">c</div>
 			<div>
-				<div class="brand-name">Crema</div>
+				<div class="brand-name">Bloom</div>
 				<div class="brand-sub">Coffee Journal</div>
 			</div>
 		</a>
@@ -104,7 +104,7 @@
 		overflow-y: auto;
 		background: var(--paper);
 	}
-	.crema-swirl {
+	.bloom-swirl {
 		position: absolute;
 		top: -120px;
 		right: -90px;

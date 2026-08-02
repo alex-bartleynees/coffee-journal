@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'crema-theme';
+const STORAGE_KEY = 'bloom-theme';
 
 type Theme = 'light' | 'dark';
 
