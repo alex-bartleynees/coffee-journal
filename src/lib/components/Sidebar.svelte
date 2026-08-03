@@ -3,6 +3,7 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { sync } from '$lib/sync/engine.svelte';
 	import { page } from '$app/state';
 	import type { IconName } from '$lib/icons/Icon.svelte';
 
@@ -46,7 +47,9 @@
 	</a>
 
 	<div class="sidebar-footer">
-		{#if auth.signedIn}
+		{#if auth.signedIn && sync.subscriptionRequired}
+			<a class="sync-status" href="/pricing">Sync off — enable Bloom Sync</a>
+		{:else if auth.signedIn}
 			<div class="sync-status synced">Synced{auth.email ? ` · ${auth.email}` : ''}</div>
 		{:else}
 			<a class="sync-status" href="/login">Not signed in — sign in to sync</a>
