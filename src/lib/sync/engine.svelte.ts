@@ -1,4 +1,5 @@
 import { Duration, Effect, Schedule, Schema } from 'effect';
+import { BFF_MODE, getCsrfToken, invalidateCsrfToken } from '$lib/bff';
 import { auth } from '$lib/stores/auth.svelte';
 import {
 	applyRemoteRecord,
@@ -22,7 +23,14 @@ import { SyncResponse, type SyncRecord } from './protocol';
  * window `online`, and a periodic backstop interval.
  */
 
-const SYNC_URL = (import.meta.env.VITE_SYNC_URL as string | undefined) ?? 'http://localhost:3001';
+/**
+ * BFF mode: same-origin `/api/sync` — cookies carry the session, YARP attaches
+ * the Bearer token, and the antiforgery middleware wants `X-CSRF-TOKEN`.
+ * Dev mode: straight at the local API with its `x-dev-user` dev auth.
+ */
+const SYNC_ENDPOINT = BFF_MODE
+	? '/api/sync'
+	: `${(import.meta.env.VITE_SYNC_URL as string | undefined) ?? 'http://localhost:3001'}/sync`;
 const DEBOUNCE_MS = 2_000;
 const INTERVAL_MS = 120_000;
 
@@ -43,31 +51,35 @@ class SyncHttpError extends Error {
 }
 
 /**
- * Auth headers for the sync request. Until Step 3 wires real Keycloak login,
- * the stand-in auth store has no token, so dev builds fall back to the API's
- * dev-mode `x-dev-user` header. When Step 3 lands, `auth` grows a token getter
- * and this function becomes `Authorization: Bearer <token>` — single swap point.
+ * Request headers per mode. BFF: the antiforgery token (session/identity ride
+ * on the cookie + YARP's Bearer attach — the browser never holds the JWT).
+ * Dev: the API's dev-mode `x-dev-user` header.
  */
-function authHeaders(): Record<string, string> {
+async function authHeaders(): Promise<Record<string, string>> {
+	if (BFF_MODE) return { 'X-CSRF-TOKEN': await getCsrfToken() };
 	if (import.meta.env.DEV) return { 'x-dev-user': 'dev' };
 	return {};
 }
 
 const postSync = (body: string) =>
 	Effect.tryPromise({
-		try: () =>
-			fetch(`${SYNC_URL}/sync`, {
+		try: async () =>
+			fetch(SYNC_ENDPOINT, {
 				method: 'POST',
-				headers: { 'content-type': 'application/json', ...authHeaders() },
-				body
+				headers: { 'content-type': 'application/json', ...(await authHeaders()) },
+				body,
+				...(BFF_MODE ? { credentials: 'include' as const } : {})
 			}),
 		catch: (e) => new Error(`network: ${String(e)}`)
 	}).pipe(
-		Effect.flatMap((res) =>
-			res.ok
+		Effect.flatMap((res) => {
+			// A 400 in BFF mode is most likely a stale antiforgery token — drop the
+			// cache so the next cycle fetches a fresh one.
+			if (BFF_MODE && res.status === 400) invalidateCsrfToken();
+			return res.ok
 				? Effect.promise(() => res.json())
-				: Effect.fail(new SyncHttpError(res.status, `sync failed: HTTP ${res.status}`))
-		),
+				: Effect.fail(new SyncHttpError(res.status, `sync failed: HTTP ${res.status}`));
+		}),
 		Effect.flatMap(Schema.decodeUnknown(SyncResponse)),
 		// Transient network errors retry with backoff; HTTP/decode errors don't
 		// (a 401 or bad contract won't fix itself seconds later).

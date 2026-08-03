@@ -12,8 +12,7 @@
 	let { children } = $props();
 
 	onMount(() => {
-		journal
-			.init()
+		Promise.all([journal.init(), auth.init()])
 			.then(() => sync.start({ refresh: journal.reload }))
 			.catch(console.error);
 	});

@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { BFF_MODE } from '$lib/bff';
 
 	function signIn() {
 		auth.signIn();
-		goto('/');
+		// In BFF mode signIn() navigates the whole page into the Keycloak flow;
+		// only the dev stand-in needs the client-side redirect home.
+		if (!BFF_MODE) goto('/');
 	}
 </script>
 

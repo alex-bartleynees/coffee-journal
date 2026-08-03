@@ -1,0 +1,10 @@
+node_modules
+.svelte-kit
+build
+.git
+.gitignore
+flake.nix
+flake.lock
+README.md
+Dockerfile
+.dockerignore
