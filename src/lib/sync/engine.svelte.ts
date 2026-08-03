@@ -37,6 +37,12 @@ const INTERVAL_MS = 120_000;
 let status = $state<'idle' | 'syncing' | 'error'>('idle');
 let lastSyncAt = $state<number | null>(null);
 let errorMessage = $state<string | null>(null);
+/**
+ * The server said 403 subscription_required: signed in but not entitled to
+ * sync (free tier is local-only). A distinct state, not an error — the UI
+ * turns it into an "Enable sync" → /pricing CTA (billing build).
+ */
+let subscriptionRequired = $state(false);
 
 /** Re-loads the journal store after remote changes land; wired up in start(). */
 let refresh: () => Promise<void> = async () => {};
@@ -136,8 +142,16 @@ async function runSync(): Promise<void> {
 		if (appliedLocally > 0) await refresh();
 		status = 'idle';
 		errorMessage = null;
+		subscriptionRequired = false;
 		lastSyncAt = Date.now();
 	} catch (e) {
+		// 403 = signed in but no sync subscription — expected state, not an error.
+		if (e instanceof Error && e.message.includes('HTTP 403')) {
+			subscriptionRequired = true;
+			status = 'idle';
+			errorMessage = null;
+			return;
+		}
 		status = 'error';
 		errorMessage = e instanceof Error ? e.message : String(e);
 		console.warn('[sync] cycle failed:', e);
@@ -187,6 +201,7 @@ export const sync = {
 	get status() { return status; },
 	get lastSyncAt() { return lastSyncAt; },
 	get error() { return errorMessage; },
+	get subscriptionRequired() { return subscriptionRequired; },
 	start,
 	schedule,
 	onSignIn
