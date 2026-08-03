@@ -273,7 +273,8 @@
 
 	:global(.grinders-shell) {
 		display: flex;
-		height: 100%;
+		flex: 1;
+		min-height: 0;
 	}
 
 	.grinders-detail-pane {

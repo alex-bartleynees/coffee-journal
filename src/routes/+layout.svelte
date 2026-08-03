@@ -6,11 +6,22 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { page } from '$app/state';
 	import { journal } from '$lib/stores/journal.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { sync } from '$lib/sync/engine.svelte';
 
 	let { children } = $props();
 
 	onMount(() => {
-		journal.init().catch(console.error);
+		journal
+			.init()
+			.then(() => sync.start({ refresh: journal.reload }))
+			.catch(console.error);
+	});
+
+	// Fires on sign-in (and on load if already signed in, harmlessly — the
+	// engine no-ops until start() has run and enrollment is a one-time sentinel).
+	$effect(() => {
+		if (auth.signedIn) void sync.onSignIn();
 	});
 
 	const tabs = [

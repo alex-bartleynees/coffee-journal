@@ -12,6 +12,7 @@ import {
 	softDeleteBrew,
 	softDeleteGrinder
 } from '$lib/db/queries';
+import { sync } from '$lib/sync/engine.svelte';
 
 let beans = $state<Bean[]>([]);
 let brews = $state<Brew[]>([]);
@@ -47,6 +48,13 @@ async function init(): Promise<void> {
 	}
 }
 
+/** Re-read all tables from SQLite — used by the sync engine after remote changes land. */
+async function reload(): Promise<void> {
+	beans = await getAllBeans();
+	brews = await getAllBrews();
+	grinders = await getAllGrinders();
+}
+
 function addBrew(brew: Brew): void {
 	brews = [brew, ...brews];
 	const idx = beans.findIndex((b) => b.id === brew.beanId);
@@ -54,16 +62,19 @@ function addBrew(brew: Brew): void {
 		beans = beans.map((b, i) => (i === idx ? { ...b, brews: b.brews + 1 } : b));
 	}
 	insertBrew(brew).catch(console.error);
+	sync.schedule();
 }
 
 function addBean(bean: Bean): void {
 	beans = [bean, ...beans];
 	insertBean(bean).catch(console.error);
+	sync.schedule();
 }
 
 function addGrinder(grinder: Grinder): void {
 	grinders = [...grinders, grinder].sort((a, b) => a.name.localeCompare(b.name));
 	insertGrinder(grinder).catch(console.error);
+	sync.schedule();
 }
 
 function deleteBrew(id: string): void {
@@ -76,16 +87,19 @@ function deleteBrew(id: string): void {
 		}
 	}
 	softDeleteBrew(id).catch(console.error);
+	sync.schedule();
 }
 
 function deleteBean(id: string): void {
 	beans = beans.filter((b) => b.id !== id);
 	softDeleteBean(id).catch(console.error);
+	sync.schedule();
 }
 
 function deleteGrinder(id: string): void {
 	grinders = grinders.filter((g) => g.id !== id);
 	softDeleteGrinder(id).catch(console.error);
+	sync.schedule();
 }
 
 export const journal = {
@@ -96,6 +110,7 @@ export const journal = {
 	get persistent() { return persistent; },
 	get error() { return error; },
 	init,
+	reload,
 	addBrew,
 	addBean,
 	addGrinder,

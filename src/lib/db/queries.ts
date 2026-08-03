@@ -13,14 +13,14 @@ export function localWriteMeta(): SyncMeta {
 	return { updatedAt: Date.now(), dirty: 1, deleted: 0 };
 }
 
-type BeanRow = {
+export type BeanRow = {
 	id: string; name: string; roaster: string; origin: string; process: string;
 	varietal: string; roast: string; altitude: string; tasting: string;
 	date_opened: string; roast_date: string; price_per_kg: number;
-	bag_weight: number; finished: number; brews: number;
+	bag_weight: number; finished: number; brews?: number;
 };
 
-type BrewRow = {
+export type BrewRow = {
 	id: string; bean_id: string; method: string; date: string; time: string;
 	grinder: string; grind_setting: number; dose_in: number; yield_out: number;
 	extraction_time: number; temperature: number; ratio: string; rating: number;
@@ -30,12 +30,56 @@ type BrewRow = {
 	buy_again: string | null; best_for: string | null; favorite: number;
 };
 
-type GrinderRow = {
+export type GrinderRow = {
 	id: string; name: string; maker: string; range_min: number; range_max: number;
 	step: number; type: string; burr: string; rpm: number | null; notes: string | null;
 };
 
-type PresetRow = { grinder_id: string; method: string; setting: number };
+export type PresetRow = { grinder_id: string; method: string; setting: number };
+
+export function beanFromRow(r: BeanRow): Bean {
+	return {
+		id: r.id, name: r.name, roaster: r.roaster, origin: r.origin,
+		process: r.process, varietal: r.varietal, roast: r.roast as Bean['roast'],
+		altitude: r.altitude, tasting: JSON.parse(r.tasting) as string[],
+		dateOpened: r.date_opened, roastDate: r.roast_date,
+		pricePerKg: r.price_per_kg, bagWeight: r.bag_weight,
+		brews: r.brews ?? 0, finished: r.finished ? true : undefined
+	};
+}
+
+export function brewFromRow(r: BrewRow): Brew {
+	const brew: Brew = {
+		id: r.id, beanId: r.bean_id, method: r.method as Brew['method'],
+		date: r.date, time: r.time, grinder: r.grinder,
+		grindSetting: r.grind_setting, doseIn: r.dose_in, yieldOut: r.yield_out,
+		extractionTime: r.extraction_time, temperature: r.temperature,
+		ratio: r.ratio, rating: r.rating, rating2: r.rating2 ?? null
+	};
+	if (r.aroma != null) brew.aroma = r.aroma;
+	if (r.flavor != null) brew.flavor = r.flavor;
+	if (r.body != null) brew.body = r.body;
+	if (r.finish != null) brew.finish = r.finish;
+	brew.descriptors = r.descriptors ? (JSON.parse(r.descriptors) as string[]) : [];
+	if (r.with_milk != null) brew.withMilk = !!r.with_milk;
+	if (r.cuts_thru_milk != null) brew.cutsThruMilk = !!r.cuts_thru_milk;
+	brew.buyAgain = (r.buy_again as Brew['buyAgain']) ?? null;
+	brew.bestFor = (r.best_for as Brew['bestFor']) ?? null;
+	brew.favorite = !!r.favorite;
+	return brew;
+}
+
+export function grinderFromRow(r: GrinderRow, presets: PresetRow[] = []): Grinder {
+	const g: Grinder = {
+		id: r.id, name: r.name, maker: r.maker,
+		range: [r.range_min, r.range_max], step: r.step,
+		type: r.type as Grinder['type'], burr: r.burr,
+		rpm: r.rpm ?? null,
+		presets: presets.map((p) => ({ method: p.method as Method, setting: p.setting }))
+	};
+	if (r.notes != null) g.notes = r.notes;
+	return g;
+}
 
 export async function getAllBeans(): Promise<Bean[]> {
 	const rows = await query<BeanRow>(`
@@ -46,61 +90,20 @@ export async function getAllBeans(): Promise<Bean[]> {
 		GROUP BY b.id
 		ORDER BY b.date_opened DESC
 	`);
-	return rows.map((r) => ({
-		id: r.id, name: r.name, roaster: r.roaster, origin: r.origin,
-		process: r.process, varietal: r.varietal, roast: r.roast as Bean['roast'],
-		altitude: r.altitude, tasting: JSON.parse(r.tasting) as string[],
-		dateOpened: r.date_opened, roastDate: r.roast_date,
-		pricePerKg: r.price_per_kg, bagWeight: r.bag_weight,
-		brews: r.brews, finished: r.finished ? true : undefined
-	}));
+	return rows.map(beanFromRow);
 }
 
 export async function getAllBrews(): Promise<Brew[]> {
 	const rows = await query<BrewRow>('SELECT * FROM brews WHERE deleted = 0 ORDER BY date DESC, time DESC');
-	return rows.map((r) => {
-		const brew: Brew = {
-			id: r.id, beanId: r.bean_id, method: r.method as Brew['method'],
-			date: r.date, time: r.time, grinder: r.grinder,
-			grindSetting: r.grind_setting, doseIn: r.dose_in, yieldOut: r.yield_out,
-			extractionTime: r.extraction_time, temperature: r.temperature,
-			ratio: r.ratio, rating: r.rating, rating2: r.rating2 ?? null
-		};
-		if (r.aroma != null) brew.aroma = r.aroma;
-		if (r.flavor != null) brew.flavor = r.flavor;
-		if (r.body != null) brew.body = r.body;
-		if (r.finish != null) brew.finish = r.finish;
-		brew.descriptors = r.descriptors ? (JSON.parse(r.descriptors) as string[]) : [];
-		if (r.with_milk != null) brew.withMilk = !!r.with_milk;
-		if (r.cuts_thru_milk != null) brew.cutsThruMilk = !!r.cuts_thru_milk;
-		brew.buyAgain = (r.buy_again as Brew['buyAgain']) ?? null;
-		brew.bestFor = (r.best_for as Brew['bestFor']) ?? null;
-		brew.favorite = !!r.favorite;
-		return brew;
-	});
+	return rows.map(brewFromRow);
 }
 
 export async function getAllGrinders(): Promise<Grinder[]> {
 	const rows = await query<GrinderRow>('SELECT * FROM grinders WHERE deleted = 0 ORDER BY name');
-	const grinders: Grinder[] = rows.map((r) => {
-		const g: Grinder = {
-			id: r.id, name: r.name, maker: r.maker,
-			range: [r.range_min, r.range_max], step: r.step,
-			type: r.type as Grinder['type'], burr: r.burr,
-			rpm: r.rpm ?? null, presets: []
-		};
-		if (r.notes != null) g.notes = r.notes;
-		return g;
-	});
-
 	const presets = await query<PresetRow>(
 		'SELECT grinder_id, method, setting FROM grinder_presets ORDER BY grinder_id, id'
 	);
-	for (const p of presets) {
-		const g = grinders.find((gr) => gr.id === p.grinder_id);
-		if (g) g.presets.push({ method: p.method as Method, setting: p.setting });
-	}
-	return grinders;
+	return rows.map((r) => grinderFromRow(r, presets.filter((p) => p.grinder_id === r.id)));
 }
 
 export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()): Promise<void> {

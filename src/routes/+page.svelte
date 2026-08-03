@@ -279,7 +279,8 @@
 
 	:global(.journal-shell) {
 		display: flex;
-		height: 100%;
+		flex: 1;
+		min-height: 0;
 	}
 
 	.journal-detail-pane {
