@@ -1,6 +1,8 @@
 <script lang="ts">
 	import TopBar from '$lib/components/TopBar.svelte';
 	import BurrIllustration from '$lib/components/BurrIllustration.svelte';
+	import GrinderDetail from '$lib/components/GrinderDetail.svelte';
+	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { METHOD_LABELS, beanById } from '$lib/data/sample';
 
@@ -13,75 +15,108 @@
 		brews.forEach((b) => (c[b.grinder] = (c[b.grinder] || 0) + 1));
 		return c;
 	});
+
+	// Desktop split-pane: rail stays on the left, detail renders on the right
+	// instead of navigating. Mobile ignores this and navigates normally.
+	let selectedGrinderId = $state<string | undefined>(undefined);
+	const effectiveSelectedId = $derived(selectedGrinderId ?? grinders[0]?.id);
+	const selectedGrinder = $derived(grinders.find((g) => g.id === effectiveSelectedId));
+	const selectedGrinderBrews = $derived(
+		selectedGrinder ? brews.filter((b) => b.grinder === selectedGrinder.id) : []
+	);
+
+	function onGrinderCardClick(e: MouseEvent, id: string) {
+		if (window.matchMedia('(min-width: 860px)').matches) {
+			e.preventDefault();
+			selectedGrinderId = id;
+		}
+	}
 </script>
 
-<div class="screen">
-	<TopBar sub="Grinders" title="Burrs & clicks" />
+<div class="grinders-shell">
+	<div class="screen">
+		<TopBar sub="Grinders" title="Burrs & clicks">
+			{#snippet action()}
+				<a class="icon-btn" href="/grinders/new" aria-label="Add grinder"><Icon name="plus" size={18} /></a>
+			{/snippet}
+		</TopBar>
 
-	<div class="stats-strip">
-		<div class="stat"><div class="stat-n">{grinders.length}</div><div class="stat-l">grinders</div></div>
-		<div class="divider"></div>
-		<div class="stat"><div class="stat-n">{brews.length}</div><div class="stat-l">brews tracked</div></div>
-		<div class="divider"></div>
-		<div class="stat"><div class="stat-n">{Object.keys(counts).length}</div><div class="stat-l">in rotation</div></div>
+		<div class="stats-strip">
+			<div class="stat"><div class="stat-n">{grinders.length}</div><div class="stat-l">grinders</div></div>
+			<div class="divider"></div>
+			<div class="stat"><div class="stat-n">{brews.length}</div><div class="stat-l">brews tracked</div></div>
+			<div class="divider"></div>
+			<div class="stat"><div class="stat-n">{Object.keys(counts).length}</div><div class="stat-l">in rotation</div></div>
+		</div>
+
+		<div class="section-label">Library</div>
+		<div class="grinder-list">
+			{#each grinders as g (g.id)}
+				<a
+					class="grinder-card"
+					class:selected={g.id === effectiveSelectedId}
+					href="/grinders/{g.id}"
+					onclick={(e) => onGrinderCardClick(e, g.id)}
+				>
+					<BurrIllustration type={g.type} size={64} />
+					<div class="grinder-info">
+						<div class="grinder-top">
+							<div class="grinder-name">{g.name}</div>
+							<div class="grinder-count mono">{counts[g.id] || 0} brews</div>
+						</div>
+						<div class="grinder-burr">{g.burr}</div>
+						<div class="preset-row">
+							{#each g.presets as p (p.method)}
+								<div class="preset-chip">
+									<span class="preset-method">{METHOD_LABELS[p.method]}</span>
+									<span class="preset-value">{p.setting}</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				</a>
+			{/each}
+		</div>
+
+		<div class="section-label">Recent settings</div>
+		<div class="recent-list">
+			{#each brews.slice(0, 5) as br (br.id)}
+				{@const g = grinders.find((x) => x.id === br.grinder)}
+				{@const bean = beans[br.beanId]}
+				{#if g}
+					{@const pct = Math.min(1, br.grindSetting / g.range[1])}
+					{@const c = 2 * Math.PI * 14}
+					<div class="recent-row">
+						<svg width="36" height="36" viewBox="0 0 36 36" class="click-dial">
+							<circle cx="18" cy="18" r="14" fill="none" stroke="var(--line)" stroke-width="2" />
+							<circle
+								cx="18"
+								cy="18"
+								r="14"
+								fill="none"
+								stroke="var(--accent)"
+								stroke-width="2"
+								stroke-dasharray={c}
+								stroke-dashoffset={c * (1 - pct)}
+								stroke-linecap="round"
+							/>
+						</svg>
+						<div class="recent-meta">
+							<div class="recent-name">{g.name}</div>
+							<div class="recent-sub">{METHOD_LABELS[br.method]} · {bean?.name}</div>
+						</div>
+						<div class="recent-setting mono">{br.grindSetting}</div>
+					</div>
+				{/if}
+			{/each}
+		</div>
 	</div>
 
-	<div class="section-label">Library</div>
-	<div class="grinder-list">
-		{#each grinders as g (g.id)}
-			<a class="grinder-card" href="/grinders/{g.id}">
-				<BurrIllustration type={g.type} size={64} />
-				<div class="grinder-info">
-					<div class="grinder-top">
-						<div class="grinder-name">{g.name}</div>
-						<div class="grinder-count mono">{counts[g.id] || 0} brews</div>
-					</div>
-					<div class="grinder-burr">{g.burr}</div>
-					<div class="preset-row">
-						{#each g.presets as p (p.method)}
-							<div class="preset-chip">
-								<span class="preset-method">{METHOD_LABELS[p.method]}</span>
-								<span class="preset-value">{p.setting}</span>
-							</div>
-						{/each}
-					</div>
-				</div>
-			</a>
-		{/each}
-	</div>
-
-	<div class="section-label">Recent settings</div>
-	<div class="recent-list">
-		{#each brews.slice(0, 5) as br (br.id)}
-			{@const g = grinders.find((x) => x.id === br.grinder)}
-			{@const bean = beans[br.beanId]}
-			{#if g}
-				{@const pct = Math.min(1, br.grindSetting / g.range[1])}
-				{@const c = 2 * Math.PI * 14}
-				<div class="recent-row">
-					<svg width="36" height="36" viewBox="0 0 36 36" class="click-dial">
-						<circle cx="18" cy="18" r="14" fill="none" stroke="var(--line)" stroke-width="2" />
-						<circle
-							cx="18"
-							cy="18"
-							r="14"
-							fill="none"
-							stroke="var(--accent)"
-							stroke-width="2"
-							stroke-dasharray={c}
-							stroke-dashoffset={c * (1 - pct)}
-							stroke-linecap="round"
-						/>
-					</svg>
-					<div class="recent-meta">
-						<div class="recent-name">{g.name}</div>
-						<div class="recent-sub">{METHOD_LABELS[br.method]} · {bean?.name}</div>
-					</div>
-					<div class="recent-setting mono">{br.grindSetting}</div>
-				</div>
-			{/if}
-		{/each}
-	</div>
+	{#if selectedGrinder}
+		<div class="grinders-detail-pane">
+			<GrinderDetail grinder={selectedGrinder} myBrews={selectedGrinderBrews} beanById={beans} />
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -234,5 +269,40 @@
 		font-size: 15px;
 		font-weight: 600;
 		color: var(--ink);
+	}
+
+	:global(.grinders-shell) {
+		display: flex;
+		height: 100%;
+	}
+
+	.grinders-detail-pane {
+		display: none;
+	}
+
+	@media (min-width: 860px) {
+		:global(.grinders-shell .screen) {
+			max-width: none;
+			margin: 0;
+			width: 360px;
+			flex-shrink: 0;
+			border-right: 1px solid var(--line-soft);
+			overflow-y: auto;
+		}
+		:global(.grinders-shell .grinder-list) {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+		:global(.grinder-card.selected) {
+			border-color: var(--accent);
+			border-width: 1.5px;
+		}
+		.grinders-detail-pane {
+			display: block;
+			flex: 1;
+			min-width: 0;
+			overflow-y: auto;
+		}
 	}
 </style>

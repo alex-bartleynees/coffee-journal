@@ -1,0 +1,182 @@
+import { exec, query } from './index';
+import type { Bean, Brew, Grinder, Method } from '$lib/data/types';
+
+/**
+ * Sync bookkeeping stamped onto every row write. Local (user-originated) writes
+ * use `localWriteMeta()` — dirty, so the sync engine picks them up. When the
+ * sync engine applies a *remote* record it passes the server's values instead
+ * (dirty=0, the server's updated_at). See [[Sync-Protocol]].
+ */
+export type SyncMeta = { updatedAt: number; dirty: 0 | 1; deleted: 0 | 1 };
+
+export function localWriteMeta(): SyncMeta {
+	return { updatedAt: Date.now(), dirty: 1, deleted: 0 };
+}
+
+type BeanRow = {
+	id: string; name: string; roaster: string; origin: string; process: string;
+	varietal: string; roast: string; altitude: string; tasting: string;
+	date_opened: string; roast_date: string; price_per_kg: number;
+	bag_weight: number; finished: number; brews: number;
+};
+
+type BrewRow = {
+	id: string; bean_id: string; method: string; date: string; time: string;
+	grinder: string; grind_setting: number; dose_in: number; yield_out: number;
+	extraction_time: number; temperature: number; ratio: string; rating: number;
+	rating2: number | null; aroma: string | null; flavor: string | null;
+	body: string | null; finish: string | null; descriptors: string | null;
+	with_milk: number | null; cuts_thru_milk: number | null;
+	buy_again: string | null; best_for: string | null; favorite: number;
+};
+
+type GrinderRow = {
+	id: string; name: string; maker: string; range_min: number; range_max: number;
+	step: number; type: string; burr: string; rpm: number | null; notes: string | null;
+};
+
+type PresetRow = { grinder_id: string; method: string; setting: number };
+
+export async function getAllBeans(): Promise<Bean[]> {
+	const rows = await query<BeanRow>(`
+		SELECT b.*, COUNT(br.id) AS brews
+		FROM beans b
+		LEFT JOIN brews br ON br.bean_id = b.id AND br.deleted = 0
+		WHERE b.deleted = 0
+		GROUP BY b.id
+		ORDER BY b.date_opened DESC
+	`);
+	return rows.map((r) => ({
+		id: r.id, name: r.name, roaster: r.roaster, origin: r.origin,
+		process: r.process, varietal: r.varietal, roast: r.roast as Bean['roast'],
+		altitude: r.altitude, tasting: JSON.parse(r.tasting) as string[],
+		dateOpened: r.date_opened, roastDate: r.roast_date,
+		pricePerKg: r.price_per_kg, bagWeight: r.bag_weight,
+		brews: r.brews, finished: r.finished ? true : undefined
+	}));
+}
+
+export async function getAllBrews(): Promise<Brew[]> {
+	const rows = await query<BrewRow>('SELECT * FROM brews WHERE deleted = 0 ORDER BY date DESC, time DESC');
+	return rows.map((r) => {
+		const brew: Brew = {
+			id: r.id, beanId: r.bean_id, method: r.method as Brew['method'],
+			date: r.date, time: r.time, grinder: r.grinder,
+			grindSetting: r.grind_setting, doseIn: r.dose_in, yieldOut: r.yield_out,
+			extractionTime: r.extraction_time, temperature: r.temperature,
+			ratio: r.ratio, rating: r.rating, rating2: r.rating2 ?? null
+		};
+		if (r.aroma != null) brew.aroma = r.aroma;
+		if (r.flavor != null) brew.flavor = r.flavor;
+		if (r.body != null) brew.body = r.body;
+		if (r.finish != null) brew.finish = r.finish;
+		brew.descriptors = r.descriptors ? (JSON.parse(r.descriptors) as string[]) : [];
+		if (r.with_milk != null) brew.withMilk = !!r.with_milk;
+		if (r.cuts_thru_milk != null) brew.cutsThruMilk = !!r.cuts_thru_milk;
+		brew.buyAgain = (r.buy_again as Brew['buyAgain']) ?? null;
+		brew.bestFor = (r.best_for as Brew['bestFor']) ?? null;
+		brew.favorite = !!r.favorite;
+		return brew;
+	});
+}
+
+export async function getAllGrinders(): Promise<Grinder[]> {
+	const rows = await query<GrinderRow>('SELECT * FROM grinders WHERE deleted = 0 ORDER BY name');
+	const grinders: Grinder[] = rows.map((r) => {
+		const g: Grinder = {
+			id: r.id, name: r.name, maker: r.maker,
+			range: [r.range_min, r.range_max], step: r.step,
+			type: r.type as Grinder['type'], burr: r.burr,
+			rpm: r.rpm ?? null, presets: []
+		};
+		if (r.notes != null) g.notes = r.notes;
+		return g;
+	});
+
+	const presets = await query<PresetRow>(
+		'SELECT grinder_id, method, setting FROM grinder_presets ORDER BY grinder_id, id'
+	);
+	for (const p of presets) {
+		const g = grinders.find((gr) => gr.id === p.grinder_id);
+		if (g) g.presets.push({ method: p.method as Method, setting: p.setting });
+	}
+	return grinders;
+}
+
+export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()): Promise<void> {
+	await exec(
+		`INSERT OR REPLACE INTO brews
+			(id, bean_id, method, date, time, grinder, grind_setting, dose_in, yield_out,
+			 extraction_time, temperature, ratio, rating, rating2, aroma, flavor, body, finish,
+			 descriptors, with_milk, cuts_thru_milk, buy_again, best_for, favorite,
+			 updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		[
+			brew.id, brew.beanId, brew.method, brew.date, brew.time, brew.grinder,
+			brew.grindSetting, brew.doseIn, brew.yieldOut, brew.extractionTime,
+			brew.temperature, brew.ratio, brew.rating, brew.rating2 ?? null,
+			brew.aroma ?? null, brew.flavor ?? null, brew.body ?? null, brew.finish ?? null,
+			JSON.stringify(brew.descriptors ?? []),
+			brew.withMilk != null ? (brew.withMilk ? 1 : 0) : null,
+			brew.cutsThruMilk != null ? (brew.cutsThruMilk ? 1 : 0) : null,
+			brew.buyAgain ?? null, brew.bestFor ?? null, brew.favorite ? 1 : 0,
+			meta.updatedAt, meta.deleted, meta.dirty
+		]
+	);
+}
+
+export async function insertBean(bean: Bean, meta: SyncMeta = localWriteMeta()): Promise<void> {
+	await exec(
+		`INSERT OR REPLACE INTO beans
+			(id, name, roaster, origin, process, varietal, roast, altitude, tasting,
+			 date_opened, roast_date, price_per_kg, bag_weight, finished,
+			 updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		[
+			bean.id, bean.name, bean.roaster, bean.origin, bean.process, bean.varietal,
+			bean.roast, bean.altitude, JSON.stringify(bean.tasting),
+			bean.dateOpened, bean.roastDate, bean.pricePerKg, bean.bagWeight,
+			bean.finished ? 1 : 0,
+			meta.updatedAt, meta.deleted, meta.dirty
+		]
+	);
+}
+
+export async function insertGrinder(grinder: Grinder, meta: SyncMeta = localWriteMeta()): Promise<void> {
+	await exec(
+		`INSERT OR REPLACE INTO grinders
+			(id, name, maker, range_min, range_max, step, type, burr, rpm, notes,
+			 updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		[
+			grinder.id, grinder.name, grinder.maker, grinder.range[0], grinder.range[1],
+			grinder.step, grinder.type, grinder.burr, grinder.rpm ?? null, grinder.notes ?? null,
+			meta.updatedAt, meta.deleted, meta.dirty
+		]
+	);
+	await exec('DELETE FROM grinder_presets WHERE grinder_id = ?', [grinder.id]);
+	for (const preset of grinder.presets) {
+		await exec(
+			'INSERT INTO grinder_presets (grinder_id, method, setting) VALUES (?,?,?)',
+			[grinder.id, preset.method, preset.setting]
+		);
+	}
+}
+
+/**
+ * Soft-delete: sets the tombstone + marks dirty so the deletion syncs. The row
+ * stays until the delete has propagated (a later compaction pass can hard-delete
+ * rows that are `deleted = 1 AND dirty = 0`). Reads all filter `deleted = 0`, so
+ * a soft-deleted record disappears from the UI immediately. See [[Sync-Protocol]].
+ */
+export async function softDeleteBean(id: string): Promise<void> {
+	await exec('UPDATE beans SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
+}
+
+export async function softDeleteBrew(id: string): Promise<void> {
+	await exec('UPDATE brews SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
+}
+
+export async function softDeleteGrinder(id: string): Promise<void> {
+	await exec('UPDATE grinders SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
+}

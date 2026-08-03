@@ -5,8 +5,7 @@
 let signedIn = $state(false);
 let email = $state<string | null>(null);
 
-function signIn(userEmail: string) {
-	email = userEmail;
+function signIn() {
 	signedIn = true;
 }
 

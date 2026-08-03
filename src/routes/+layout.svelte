@@ -1,11 +1,17 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import '$lib/styles/app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import Icon from '$lib/icons/Icon.svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { page } from '$app/state';
+	import { journal } from '$lib/stores/journal.svelte';
 
 	let { children } = $props();
+
+	onMount(() => {
+		journal.init().catch(console.error);
+	});
 
 	const tabs = [
 		{ href: '/', match: '/', icon: 'journal' as const, label: 'Journal' },
@@ -27,6 +33,16 @@
 	</div>
 
 	<div class="app-main">
+		{#if journal.ready && journal.error}
+			<div class="db-banner db-banner--error" role="alert">
+				Couldn't load your saved data. Changes won't be kept this session.
+			</div>
+		{:else if journal.ready && !journal.persistent}
+			<div class="db-banner db-banner--warn" role="status">
+				Storage isn't available here — brews you add won't be saved after you reload.
+			</div>
+		{/if}
+
 		{@render children()}
 
 		{#if isTabRoot}
@@ -62,6 +78,20 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+	}
+	.db-banner {
+		padding: 10px 16px;
+		font-size: 13px;
+		line-height: 1.4;
+		text-align: center;
+	}
+	.db-banner--warn {
+		background: #fef3c7;
+		color: #92400e;
+	}
+	.db-banner--error {
+		background: #fee2e2;
+		color: #991b1b;
 	}
 	.sidebar-slot {
 		display: none;

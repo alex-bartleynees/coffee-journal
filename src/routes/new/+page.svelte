@@ -3,6 +3,7 @@
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { createDraft } from '$lib/components/new-brew/DraftBrew';
+	import { newId } from '$lib/data/id';
 	import BeanStep from '$lib/components/new-brew/BeanStep.svelte';
 	import BrewStep from '$lib/components/new-brew/BrewStep.svelte';
 	import TasteStep from '$lib/components/new-brew/TasteStep.svelte';
@@ -26,7 +27,7 @@
 		);
 		const brew: Brew = {
 			...draft,
-			id: 'br' + (journal.brews.length + 1) + '-' + Date.now(),
+			id: newId('br'),
 			date: referenceDate,
 			time: new Date().toTimeString().slice(0, 5),
 			ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',

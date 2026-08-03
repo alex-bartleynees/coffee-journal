@@ -2,15 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
 
-	let mode = $state<'signin' | 'signup'>('signin');
-	let email = $state('');
-	let password = $state('');
-	let showPw = $state(false);
-
-	function submit(e: SubmitEvent) {
-		e.preventDefault();
-		if (!email) return;
-		auth.signIn(email);
+	function signIn() {
+		auth.signIn();
 		goto('/');
 	}
 </script>
@@ -32,63 +25,16 @@
 		</a>
 
 		<div class="hero">
-			<div class="eyebrow">{mode === 'signin' ? 'Welcome back' : 'New here'}</div>
-			<h1>
-				{#if mode === 'signin'}
-					Pour yourself<br /><span class="accent-text">back in.</span>
-				{:else}
-					Start your<br /><span class="accent-text">brew journal.</span>
-				{/if}
-			</h1>
-			<p>
-				{mode === 'signin'
-					? 'Sign in to keep your tasting notes and recipes in sync across devices.'
-					: 'Everything you\'ve logged so far stays on this device — signing up starts syncing it.'}
-			</p>
+			<div class="eyebrow">Welcome back</div>
+			<h1>Pour yourself<br /><span class="accent-text">back in.</span></h1>
+			<p>Sign in to keep your tasting notes and recipes in sync across devices.</p>
 		</div>
 
-		<form onsubmit={submit} class="login-form">
-			<label class="field">
-				<span class="field-label">Email</span>
-				<input class="field-input" type="email" bind:value={email} placeholder="you@roastery.com" required />
-			</label>
-			<label class="field">
-				<span class="field-label-row">
-					<span class="field-label">Password</span>
-				</span>
-				<div class="pw-wrap">
-					<input
-						class="field-input"
-						type={showPw ? 'text' : 'password'}
-						bind:value={password}
-						placeholder={mode === 'signup' ? 'Choose a password' : '••••••••'}
-					/>
-					<button type="button" class="pw-toggle" onclick={() => (showPw = !showPw)}>
-						{showPw ? 'Hide' : 'Show'}
-					</button>
-				</div>
-			</label>
-
-			<button type="submit" class="btn btn-primary">
-				{mode === 'signin' ? 'Sign in' : 'Create account'}
+		<div class="login-form">
+			<button type="button" class="btn btn-primary" onclick={signIn}>
+				Sign in
 				<span class="arrow">→</span>
 			</button>
-		</form>
-
-		<div class="divider"><span>or continue with</span></div>
-		<div class="sso-row">
-			<button type="button" class="sso-btn">Apple</button>
-			<button type="button" class="sso-btn">Google</button>
-		</div>
-
-		<div class="switch">
-			{#if mode === 'signin'}
-				Don't have an account?
-				<button type="button" class="link" onclick={() => (mode = 'signup')}>Create one</button>
-			{:else}
-				Already brewing with us?
-				<button type="button" class="link" onclick={() => (mode = 'signin')}>Sign in</button>
-			{/if}
 		</div>
 
 		<a class="skip" href="/">Skip — keep using it locally</a>
@@ -212,92 +158,15 @@
 		flex-direction: column;
 		gap: 12px;
 	}
-	.field-label-row {
-		display: flex;
-		justify-content: space-between;
-	}
-	.pw-wrap {
-		position: relative;
-	}
-	.pw-wrap .field-input {
-		padding-right: 60px;
-	}
-	.pw-toggle {
-		position: absolute;
-		right: 8px;
-		top: 50%;
-		transform: translateY(-50%);
-		padding: 4px 10px;
-		border-radius: 6px;
-		font-size: 10.5px;
-		font-weight: 600;
-		letter-spacing: 0.6px;
-		text-transform: uppercase;
-		color: var(--ink-3);
-		font-family: var(--mono);
-	}
-	.login-form .btn {
-		margin-top: 4px;
-	}
 	.arrow {
 		font-family: var(--serif);
 		font-style: italic;
 		font-weight: 400;
 	}
-	.divider {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		margin: 20px 0 14px;
-		font-size: 10px;
-		letter-spacing: 1.4px;
-		text-transform: uppercase;
-		color: var(--ink-4);
-		font-weight: 600;
-	}
-	.divider::before,
-	.divider::after {
-		content: '';
-		flex: 1;
-		height: 1px;
-		background: var(--line-soft);
-	}
-	.sso-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 8px;
-	}
-	.sso-btn {
-		padding: 13px 12px;
-		border-radius: 12px;
-		background: var(--card);
-		border: 1px solid var(--line-soft);
-		color: var(--ink);
-		font-size: 13.5px;
-		font-weight: 600;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-	}
-	.switch {
-		margin-top: auto;
-		padding-top: 28px;
-		text-align: center;
-		font-size: 13px;
-		color: var(--ink-3);
-	}
-	.link {
-		color: var(--ink);
-		font-weight: 600;
-		font-size: 13px;
-		text-decoration: underline;
-		text-underline-offset: 3px;
-		text-decoration-color: var(--line);
-	}
 	.skip {
 		display: block;
-		margin-top: 14px;
+		margin-top: auto;
+		padding-top: 28px;
 		text-align: center;
 		font-size: 12px;
 		color: var(--ink-3);

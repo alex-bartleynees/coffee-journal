@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/icons/Icon.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { page } from '$app/state';
@@ -46,10 +47,11 @@
 
 	<div class="sidebar-footer">
 		{#if auth.signedIn}
-			<div class="sync-status synced">Synced · {auth.email}</div>
+			<div class="sync-status synced">Synced{auth.email ? ` · ${auth.email}` : ''}</div>
 		{:else}
 			<a class="sync-status" href="/login">Not signed in — sign in to sync</a>
 		{/if}
+		<ThemeToggle />
 	</div>
 </aside>
 
@@ -160,8 +162,13 @@
 		margin-top: auto;
 		padding: 14px;
 		border-top: 1px solid var(--line-soft);
+		display: flex;
+		align-items: center;
+		gap: 10px;
 	}
 	.sync-status {
+		flex: 1;
+		min-width: 0;
 		font-size: 11px;
 		color: var(--ink-3);
 		display: block;

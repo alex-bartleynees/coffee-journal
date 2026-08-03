@@ -2,6 +2,8 @@
 	import TopBar from '$lib/components/TopBar.svelte';
 	import BeanBag from '$lib/components/BeanBag.svelte';
 	import RoastDot from '$lib/components/RoastDot.svelte';
+	import BeanDetail from '$lib/components/BeanDetail.svelte';
+	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 
 	let filter = $state<'all' | 'active' | 'finished'>('all');
@@ -26,50 +28,84 @@
 	function daysSince(d: string) {
 		return Math.round((new Date(referenceDate).getTime() - new Date(d).getTime()) / 86400000);
 	}
+
+	// Desktop split-pane: grid stays on the left, detail rail renders on the
+	// right instead of navigating. Mobile ignores this and navigates normally.
+	let selectedBeanId = $state<string | undefined>(undefined);
+	const effectiveSelectedId = $derived(selectedBeanId ?? list[0]?.id);
+	const selectedBean = $derived(beans.find((b) => b.id === effectiveSelectedId));
+	const selectedBeanBrews = $derived(
+		selectedBean ? brews.filter((br) => br.beanId === selectedBean.id) : []
+	);
+
+	function onBeanCardClick(e: MouseEvent, id: string) {
+		if (window.matchMedia('(min-width: 860px)').matches) {
+			e.preventDefault();
+			selectedBeanId = id;
+		}
+	}
 </script>
 
-<div class="screen">
-	<TopBar sub="{beans.length} beans logged" title="Beans" />
+<div class="beans-shell">
+	<div class="screen">
+		<TopBar sub="{beans.length} beans logged" title="Beans">
+			{#snippet action()}
+				<a class="icon-btn" href="/beans/new" aria-label="Add bean"><Icon name="plus" size={18} /></a>
+			{/snippet}
+		</TopBar>
 
-	<div class="filter-row">
-		{#each ['all', 'active', 'finished'] as const as f (f)}
-			<button class="chip" class:active={filter === f} onclick={() => (filter = f)}>
-				{f}
-				<span class="filter-count">{counts[f]}</span>
-			</button>
-		{/each}
-	</div>
+		<div class="filter-row">
+			{#each ['all', 'active', 'finished'] as const as f (f)}
+				<button class="chip" class:active={filter === f} onclick={() => (filter = f)}>
+					{f}
+					<span class="filter-count">{counts[f]}</span>
+				</button>
+			{/each}
+		</div>
 
-	<div class="bean-list">
-		{#each list as bean (bean.id)}
-			{@const beanBrews = brews.filter((br) => br.beanId === bean.id)}
-			{@const avg = beanBrews.length ? (beanBrews.reduce((s, b) => s + b.rating, 0) / beanBrews.length).toFixed(1) : null}
-			<a class="bean-card" href="/beans/{bean.id}" class:finished={bean.finished}>
-				<BeanBag roast={bean.roast} roaster={bean.roaster} />
-				<div class="bean-info">
-					<div>
-						<div class="bean-name">{bean.name}</div>
-						<div class="bean-roaster">{bean.roaster}</div>
-					</div>
-					<div class="bean-tasting">
-						{#each bean.tasting.slice(0, 3) as t (t)}
-							<span class="tasting-chip">{t}</span>
-						{/each}
-					</div>
-					<div class="bean-meta mono">
-						<RoastDot roast={bean.roast} />
-						<span>{bean.brews}× brewed</span>
-						{#if avg}
+		<div class="bean-list">
+			{#each list as bean (bean.id)}
+				{@const beanBrews = brews.filter((br) => br.beanId === bean.id)}
+				{@const avg = beanBrews.length ? (beanBrews.reduce((s, b) => s + b.rating, 0) / beanBrews.length).toFixed(1) : null}
+				<a
+					class="bean-card"
+					class:finished={bean.finished}
+					class:selected={bean.id === effectiveSelectedId}
+					href="/beans/{bean.id}"
+					onclick={(e) => onBeanCardClick(e, bean.id)}
+				>
+					<BeanBag roast={bean.roast} roaster={bean.roaster} />
+					<div class="bean-info">
+						<div>
+							<div class="bean-name">{bean.name}</div>
+							<div class="bean-roaster">{bean.roaster}</div>
+						</div>
+						<div class="bean-tasting">
+							{#each bean.tasting.slice(0, 3) as t (t)}
+								<span class="tasting-chip">{t}</span>
+							{/each}
+						</div>
+						<div class="bean-meta mono">
+							<RoastDot roast={bean.roast} />
+							<span>{bean.brews}× brewed</span>
+							{#if avg}
+								<span class="dim">·</span>
+								<span class="avg">★ {avg}</span>
+							{/if}
 							<span class="dim">·</span>
-							<span class="avg">★ {avg}</span>
-						{/if}
-						<span class="dim">·</span>
-						<span>{daysSince(bean.dateOpened)}d</span>
+							<span>{daysSince(bean.dateOpened)}d</span>
+						</div>
 					</div>
-				</div>
-			</a>
-		{/each}
+				</a>
+			{/each}
+		</div>
 	</div>
+
+	{#if selectedBean}
+		<div class="beans-detail-pane">
+			<BeanDetail bean={selectedBean} beanBrews={selectedBeanBrews} {referenceDate} />
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -159,5 +195,34 @@
 	.bean-meta .avg {
 		color: var(--ink);
 		font-weight: 500;
+	}
+
+	:global(.beans-shell) {
+		display: flex;
+		height: 100%;
+	}
+
+	.beans-detail-pane {
+		display: none;
+	}
+
+	@media (min-width: 860px) {
+		:global(.beans-shell .screen) {
+			max-width: none;
+			margin: 0;
+			flex: 1;
+			min-width: 0;
+		}
+		:global(.bean-card.selected) {
+			border-color: var(--accent);
+			border-width: 1.5px;
+		}
+		.beans-detail-pane {
+			display: block;
+			width: 360px;
+			flex-shrink: 0;
+			border-left: 1px solid var(--line-soft);
+			overflow-y: auto;
+		}
 	}
 </style>

@@ -25,7 +25,9 @@
 		| 'pause'
 		| 'reset'
 		| 'milk'
-		| 'coffee';
+		| 'coffee'
+		| 'sun'
+		| 'moon';
 </script>
 
 <script lang="ts">
@@ -140,6 +142,11 @@
 			<path d="M5 8h12v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z" />
 			<path d="M17 10h2a2 2 0 0 1 0 4h-2" />
 			<path d="M9 2c0 1 1 2 1 3s-1 2-1 3M13 2c0 1 1 2 1 3s-1 2-1 3" />
+		{:else if name === 'sun'}
+			<circle cx="12" cy="12" r="4" />
+			<path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
+		{:else if name === 'moon'}
+			<path d="M20 14.5A8 8 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z" />
 		{/if}
 	</svg>
 {/if}
