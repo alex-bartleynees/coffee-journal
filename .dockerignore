@@ -8,3 +8,7 @@ flake.lock
 README.md
 Dockerfile
 .dockerignore
+
+# k8s/CI artifacts — not needed in the image build context
+deployment/
+.github/
