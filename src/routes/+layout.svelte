@@ -11,7 +11,22 @@
 
 	let { children } = $props();
 
+	// Ask the browser to keep our local data (OPFS SQLite + caches) from being
+	// evicted. Matters most on iOS, where non-persistent storage is cleared after
+	// ~7 days of inactivity — installing to the home screen + this request is the
+	// durability path for the local-first DB.
+	async function requestPersistentStorage() {
+		try {
+			if (navigator.storage?.persist && !(await navigator.storage.persisted())) {
+				await navigator.storage.persist();
+			}
+		} catch {
+			// Non-fatal — the app still works, just without the eviction guarantee.
+		}
+	}
+
 	onMount(() => {
+		void requestPersistentStorage();
 		Promise.all([journal.init(), auth.init()])
 			.then(() => sync.start({ refresh: journal.reload }))
 			.catch(console.error);
