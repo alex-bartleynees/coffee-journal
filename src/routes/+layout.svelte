@@ -4,6 +4,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import Icon from '$lib/icons/Icon.svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import SearchOverlay from '$lib/components/SearchOverlay.svelte';
 	import { page } from '$app/state';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -97,6 +98,8 @@
 		{/if}
 	</div>
 </div>
+
+<SearchOverlay />
 
 <style>
 	.app-main {

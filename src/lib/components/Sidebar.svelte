@@ -6,6 +6,7 @@
 	import { sync } from '$lib/sync/engine.svelte';
 	import { page } from '$app/state';
 	import type { IconName } from '$lib/icons/Icon.svelte';
+	import { search } from '$lib/stores/search.svelte';
 
 	const navItems: { href: string; icon: IconName; label: string; count?: number }[] = $derived([
 		{ href: '/', icon: 'journal', label: 'Journal', count: journal.brews.length },
@@ -24,10 +25,10 @@
 		</div>
 	</a>
 
-	<div class="search-box">
+	<button class="search-box" type="button" onclick={search.open}>
 		<Icon name="search" size={12} />
 		<span>Search beans, brews…</span>
-	</div>
+	</button>
 
 	<nav class="nav">
 		{#each navItems as item (item.href)}
@@ -104,6 +105,7 @@
 		margin-top: 3px;
 	}
 	.search-box {
+		width: calc(100% - 28px);
 		margin: 0 14px 12px;
 		display: flex;
 		align-items: center;
@@ -114,6 +116,14 @@
 		border-radius: 8px;
 		font-size: 12px;
 		color: var(--ink-3);
+		text-align: left;
+		cursor: pointer;
+	}
+	.search-box:hover,
+	.search-box:focus-visible {
+		border-color: var(--ink-4);
+		color: var(--ink-2);
+		outline: none;
 	}
 	.nav {
 		padding: 4px 8px;

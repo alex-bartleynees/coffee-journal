@@ -6,6 +6,7 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { sync } from '$lib/sync/engine.svelte';
+	import { search } from '$lib/stores/search.svelte';
 	import { METHOD_LABELS, beanById } from '$lib/data/sample';
 
 	const beans = $derived(beanById(journal.beans));
@@ -78,7 +79,7 @@
 	<div class="screen">
 		<TopBar sub={todaySub()} title="The Journal">
 			{#snippet action()}
-				<button class="icon-btn" aria-label="Search"><Icon name="search" size={18} /></button>
+				<button class="icon-btn" type="button" aria-label="Search" onclick={search.open}><Icon name="search" size={18} /></button>
 			{/snippet}
 		</TopBar>
 

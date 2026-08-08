@@ -5,6 +5,7 @@
 	import BeanDetail from '$lib/components/BeanDetail.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
+	import { search } from '$lib/stores/search.svelte';
 
 	let filter = $state<'all' | 'active' | 'finished'>('all');
 
@@ -50,6 +51,9 @@
 	<div class="screen">
 		<TopBar sub="{beans.length} beans logged" title="Beans">
 			{#snippet action()}
+				<button class="icon-btn" type="button" aria-label="Search beans and brews" onclick={search.open}>
+					<Icon name="search" size={18} />
+				</button>
 				<a class="icon-btn" href="/beans/new" aria-label="Add bean"><Icon name="plus" size={18} /></a>
 			{/snippet}
 		</TopBar>
