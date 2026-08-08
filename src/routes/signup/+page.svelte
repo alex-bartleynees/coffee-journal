@@ -8,7 +8,6 @@
 	let showPassword = $state(false);
 	let submitting = $state(false);
 	let error = $state('');
-	let accountMayExist = $state(false);
 
 	function validate(): string {
 		if (!name.trim()) return 'Enter your name.';
@@ -26,7 +25,6 @@
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		error = validate();
-		accountMayExist = false;
 		if (error) return;
 
 		submitting = true;
@@ -38,11 +36,6 @@
 		}
 		password = '';
 		confirmPassword = '';
-		if (result === 'account_may_exist') {
-			accountMayExist = true;
-			error = 'An account with this email may already exist. Sign in instead.';
-			return;
-		}
 		error = messageFor(result);
 	}
 </script>
@@ -79,7 +72,6 @@
 			<button class="btn btn-primary" type="submit" disabled={submitting}>
 				{submitting ? 'Creating account…' : 'Create account'} <span aria-hidden="true">→</span>
 			</button>
-			{#if accountMayExist}<a class="signin-action" href="/bff/login">Sign in</a>{/if}
 		</form>
 
 		<p class="existing">Already have an account? <a href="/bff/login">Sign in</a></p>
@@ -110,7 +102,6 @@
 	.hint { margin: -7px 0 0; font-size: 11px; color: var(--ink-3); }
 	.form-error { border: 1px solid color-mix(in srgb, #a43b32 28%, transparent); border-radius: 9px; padding: 10px 12px; background: color-mix(in srgb, #a43b32 8%, transparent); color: #8b3029; font-size: 12px; line-height: 1.4; }
 	.btn:disabled { opacity: .65; cursor: wait; }
-	.signin-action { text-align: center; font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 	.existing { margin: 22px 0 0; text-align: center; font-size: 12px; color: var(--ink-3); }
 	.existing a { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 	.skip { display: block; margin-top: 22px; text-align: center; font-size: 12px; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }

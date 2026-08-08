@@ -4,7 +4,7 @@ export type CreateUserInput = {
 	password: string;
 };
 
-export type CreateUserResult = 'created' | 'account_may_exist' | 'too_many_requests' | 'failed';
+export type CreateUserResult = 'created' | 'too_many_requests' | 'failed';
 
 export async function createUser(input: CreateUserInput): Promise<CreateUserResult> {
 	try {
@@ -15,7 +15,6 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
 			body: JSON.stringify(input)
 		});
 		if (response.status === 201) return 'created';
-		if (response.status === 409) return 'account_may_exist';
 		if (response.status === 429) return 'too_many_requests';
 		return 'failed';
 	} catch {
