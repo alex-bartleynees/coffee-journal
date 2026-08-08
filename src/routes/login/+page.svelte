@@ -51,6 +51,7 @@
 		flex-direction: column;
 		position: relative;
 		overflow-y: auto;
+		overflow-x: hidden;
 		background: var(--paper);
 	}
 	.bloom-swirl {
