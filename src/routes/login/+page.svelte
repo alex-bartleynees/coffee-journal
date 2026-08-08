@@ -38,6 +38,7 @@
 				Sign in
 				<span class="arrow">→</span>
 			</button>
+			<a class="create-account" href="/signup">New to Bloom? Create an account</a>
 		</div>
 
 		<a class="skip" href="/">Skip — keep using it locally</a>
@@ -166,6 +167,14 @@
 		font-family: var(--serif);
 		font-style: italic;
 		font-weight: 400;
+	}
+	.create-account {
+		text-align: center;
+		font-size: 12.5px;
+		font-weight: 600;
+		color: var(--accent);
+		text-decoration: underline;
+		text-underline-offset: 3px;
 	}
 	.skip {
 		display: block;
