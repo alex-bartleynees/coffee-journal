@@ -65,7 +65,8 @@
 			</div>
 		{:else if journal.ready && !journal.persistent}
 			<div class="db-banner db-banner--warn" role="status">
-				Storage isn't available here — brews you add won't be saved after you reload.
+				Storage isn't available. Bloom supports one open tab or app window at a time. Close any
+				other Bloom tabs, then reload — changes made here won't be saved.
 			</div>
 		{/if}
 
