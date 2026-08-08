@@ -9,7 +9,7 @@
 	const beanBrews = $derived(journal.brews.filter((b) => b.beanId === page.params.id));
 
 	const referenceDate = $derived(
-		journal.brews.reduce((max, b) => (b.date > max ? b.date : max), journal.brews[0]?.date ?? '')
+		journal.brews.reduce((max, b) => (b.date > max ? b.date : max), journal.brews[0]?.date ?? new Date().toISOString().slice(0, 10))
 	);
 </script>
 

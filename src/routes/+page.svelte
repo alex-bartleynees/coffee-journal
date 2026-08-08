@@ -12,7 +12,7 @@
 	const brews = $derived(journal.brews);
 
 	const referenceDate = $derived(
-		brews.reduce((max, b) => (b.date > max ? b.date : max), brews[0]?.date ?? '')
+		brews.reduce((max, b) => (b.date > max ? b.date : max), brews[0]?.date ?? new Date().toISOString().slice(0, 10))
 	);
 
 	const groups = $derived(

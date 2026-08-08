@@ -49,6 +49,7 @@
 </script>
 
 <svelte:head>
+	<title>Bloom - Coffee Journal</title>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
