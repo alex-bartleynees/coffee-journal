@@ -109,7 +109,7 @@
 		{:else if name === 'check'}
 			<path d="M5 12l5 5L20 6" stroke-width={strokeWidth + 0.6} />
 		{:else if name === 'close'}
-			<path d="M6 6l12 12M18 6l-6 12" />
+			<path d="M6 6l12 12M18 6L6 18" />
 		{:else if name === 'compare'}
 			<path d="M8 4v16M16 4v16" />
 			<path d="M4 8l4-4 4 4M20 16l-4 4-4-4" />
