@@ -20,6 +20,12 @@
 	let roast = $state<Roast>('medium');
 	let altitude = $state('');
 	let tasting = $state<string[]>([]);
+	let customTasting = $state<Record<string, string[]>>(
+		Object.fromEntries(Object.keys(TASTE_DESCRIPTORS).map((category) => [category, []]))
+	);
+	let customTastingInput = $state<Record<string, string>>(
+		Object.fromEntries(Object.keys(TASTE_DESCRIPTORS).map((category) => [category, '']))
+	);
 	let dateOpened = $state(today);
 	let roastDate = $state(today);
 	let pricePerKg = $state(60);
@@ -37,12 +43,30 @@
 		tasting = tasting.includes(t) ? tasting.filter((x) => x !== t) : [...tasting, t];
 	}
 
+	function addCustomTasting(category: string) {
+		const note = customTastingInput[category].trim();
+		if (!note) return;
+
+		const existing = tasting.find((item) => item.toLocaleLowerCase() === note.toLocaleLowerCase());
+		if (!existing) {
+			tasting = [...tasting, note];
+			customTasting[category] = [...customTasting[category], note];
+		}
+		customTastingInput[category] = '';
+	}
+
+	function removeCustomTasting(category: string, note: string) {
+		customTasting[category] = customTasting[category].filter((item) => item !== note);
+		tasting = tasting.filter((item) => item !== note);
+	}
+
 	function close() {
 		history.length > 1 ? history.back() : goto('/beans');
 	}
 
 	function save() {
 		if (!canSave) return;
+		for (const category of Object.keys(TASTE_DESCRIPTORS)) addCustomTasting(category);
 		const bean: Bean = {
 			id: newId('b'),
 			name: name.trim(),
@@ -142,6 +166,34 @@
 							{item}
 						</button>
 					{/each}
+					{#each customTasting[cat] as note (note)}
+						<button
+							class="chip active custom-chip"
+							onclick={() => removeCustomTasting(cat, note)}
+							aria-label={`Remove ${note}`}
+						>
+							{note}<span aria-hidden="true">×</span>
+						</button>
+					{/each}
+				</div>
+				<div class="custom-note-row">
+					<input
+						class="field-input custom-note-input"
+						placeholder={`Add your own ${cat.toLocaleLowerCase()} note`}
+						aria-label={`Custom ${cat.toLocaleLowerCase()} tasting note`}
+						bind:value={customTastingInput[cat]}
+						onkeydown={(event) => {
+							if (event.key === 'Enter') {
+								event.preventDefault();
+								addCustomTasting(cat);
+							}
+						}}
+					/>
+					<button
+						class="add-note-btn"
+						disabled={!customTastingInput[cat].trim()}
+						onclick={() => addCustomTasting(cat)}>Add</button
+					>
 				</div>
 			</div>
 		{/each}
@@ -192,6 +244,33 @@
 		color: var(--ink-3);
 		font-weight: 500;
 		margin-bottom: 6px;
+	}
+	.custom-chip span {
+		font-size: 15px;
+		line-height: 10px;
+		opacity: 0.75;
+	}
+	.custom-note-row {
+		display: flex;
+		gap: 8px;
+		margin-top: 8px;
+	}
+	.custom-note-input {
+		min-width: 0;
+		padding: 9px 12px;
+		font-size: 14px;
+	}
+	.add-note-btn {
+		padding: 0 14px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		background: var(--card-2);
+		color: var(--ink-2);
+		font-size: 13px;
+		font-weight: 600;
+	}
+	.add-note-btn:disabled {
+		opacity: 0.45;
 	}
 	.form-footer {
 		padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 16px));
