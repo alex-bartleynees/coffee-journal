@@ -39,6 +39,15 @@
 				<div class="ratio-value mono">{ratio}</div>
 			</div>
 		</div>
+		<div class="field">
+			<div class="field-label">Notes</div>
+			<textarea
+				class="field-input recipe-notes"
+				rows="2"
+				placeholder="Bloom 40g / 30s, slow pour…"
+				bind:value={draft.recipeNotes}
+			></textarea>
+		</div>
 	</div>
 
 	<div class="section-label">Grinder</div>
@@ -73,6 +82,10 @@
 		flex-direction: column;
 		gap: 12px;
 		margin-bottom: 12px;
+	}
+	.recipe-notes {
+		resize: none;
+		font-size: 14px;
 	}
 	.ratio-display {
 		display: flex;

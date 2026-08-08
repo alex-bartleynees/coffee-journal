@@ -10,6 +10,7 @@ export interface DraftBrew {
 	yieldOut: number;
 	extractionTime: number;
 	temperature: number;
+	recipeNotes: string;
 	aroma: string;
 	flavor: string;
 	body: string;
@@ -33,6 +34,7 @@ export function createDraft(beanId: string): DraftBrew {
 		yieldOut: 36,
 		extractionTime: 0,
 		temperature: 93,
+		recipeNotes: '',
 		aroma: '',
 		flavor: '',
 		body: '',
@@ -44,4 +46,48 @@ export function createDraft(beanId: string): DraftBrew {
 		buyAgain: null,
 		bestFor: null
 	};
+}
+
+/**
+ * In-progress brew autosave. A brew is only written to SQLite on the final Save,
+ * but the tasting flow can span 30+ minutes — so the working draft is mirrored to
+ * localStorage on every edit and restored if the tab/PWA reloads mid-flow. This is
+ * transient, single-device, must-not-sync UI state, so it lives here and never
+ * touches the synced SQLite domain store.
+ */
+const DRAFT_KEY = 'bloom:draft-brew';
+
+export function loadDraft(): { draft: DraftBrew; tab: number } | null {
+	if (typeof localStorage === 'undefined') return null;
+	try {
+		const raw = localStorage.getItem(DRAFT_KEY);
+		if (!raw) return null;
+		const parsed = JSON.parse(raw) as { draft?: Partial<DraftBrew>; tab?: number };
+		if (!parsed?.draft) return null;
+		// Merge over a fresh draft so drafts saved before a field was added stay valid.
+		return {
+			draft: { ...createDraft(parsed.draft.beanId ?? ''), ...parsed.draft },
+			tab: typeof parsed.tab === 'number' ? parsed.tab : 0
+		};
+	} catch {
+		return null;
+	}
+}
+
+export function saveDraft(draft: DraftBrew, tab: number): void {
+	if (typeof localStorage === 'undefined') return;
+	try {
+		localStorage.setItem(DRAFT_KEY, JSON.stringify({ draft, tab }));
+	} catch {
+		// Best-effort autosave — ignore quota/availability errors.
+	}
+}
+
+export function clearDraft(): void {
+	if (typeof localStorage === 'undefined') return;
+	try {
+		localStorage.removeItem(DRAFT_KEY);
+	} catch {
+		// Ignore — nothing actionable if removal fails.
+	}
 }

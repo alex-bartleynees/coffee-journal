@@ -27,7 +27,8 @@ export type BrewRow = {
 	rating2: number | null; aroma: string | null; flavor: string | null;
 	body: string | null; finish: string | null; descriptors: string | null;
 	with_milk: number | null; cuts_thru_milk: number | null;
-	buy_again: string | null; best_for: string | null; favorite: number;
+	buy_again: string | null; best_for: string | null; recipe_notes: string | null;
+	favorite: number;
 };
 
 export type GrinderRow = {
@@ -65,6 +66,7 @@ export function brewFromRow(r: BrewRow): Brew {
 	if (r.cuts_thru_milk != null) brew.cutsThruMilk = !!r.cuts_thru_milk;
 	brew.buyAgain = (r.buy_again as Brew['buyAgain']) ?? null;
 	brew.bestFor = (r.best_for as Brew['bestFor']) ?? null;
+	if (r.recipe_notes != null) brew.recipeNotes = r.recipe_notes;
 	brew.favorite = !!r.favorite;
 	return brew;
 }
@@ -111,9 +113,9 @@ export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()):
 		`INSERT OR REPLACE INTO brews
 			(id, bean_id, method, date, time, grinder, grind_setting, dose_in, yield_out,
 			 extraction_time, temperature, ratio, rating, rating2, aroma, flavor, body, finish,
-			 descriptors, with_milk, cuts_thru_milk, buy_again, best_for, favorite,
-			 updated_at, deleted, dirty)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			 descriptors, with_milk, cuts_thru_milk, buy_again, best_for, recipe_notes,
+			 favorite, updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
 			brew.id, brew.beanId, brew.method, brew.date, brew.time, brew.grinder,
 			brew.grindSetting, brew.doseIn, brew.yieldOut, brew.extractionTime,
@@ -122,7 +124,8 @@ export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()):
 			JSON.stringify(brew.descriptors ?? []),
 			brew.withMilk != null ? (brew.withMilk ? 1 : 0) : null,
 			brew.cutsThruMilk != null ? (brew.cutsThruMilk ? 1 : 0) : null,
-			brew.buyAgain ?? null, brew.bestFor ?? null, brew.favorite ? 1 : 0,
+			brew.buyAgain ?? null, brew.bestFor ?? null, brew.recipeNotes ?? null,
+			brew.favorite ? 1 : 0,
 			meta.updatedAt, meta.deleted, meta.dirty
 		]
 	);

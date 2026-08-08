@@ -84,7 +84,7 @@
 			brews: 0
 		};
 		journal.addBean(bean);
-		goto(`/beans/${bean.id}`);
+		goto(`/beans/${bean.id}`, { replaceState: true });
 	}
 </script>
 

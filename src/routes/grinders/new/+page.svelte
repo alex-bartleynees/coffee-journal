@@ -52,7 +52,7 @@
 			presets
 		};
 		journal.addGrinder(grinder);
-		goto(`/grinders/${grinder.id}`);
+		goto(`/grinders/${grinder.id}`, { replaceState: true });
 	}
 </script>
 

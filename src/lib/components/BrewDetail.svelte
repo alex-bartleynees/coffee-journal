@@ -80,6 +80,10 @@
 		</div>
 	</div>
 
+	{#if brew.recipeNotes}
+		<div class="recipe-notes">{brew.recipeNotes}</div>
+	{/if}
+
 	<div class="section-label">Tasting</div>
 	<div class="tasting-card">
 		{#if brew.descriptors?.length}
@@ -218,6 +222,17 @@
 		font-size: 11px;
 		color: var(--ink-3);
 		font-weight: 400;
+	}
+	.recipe-notes {
+		margin: 10px 16px 0;
+		padding: 14px 16px;
+		background: var(--card);
+		border: 1px solid var(--line-soft);
+		border-radius: var(--r-lg);
+		font-size: 14px;
+		line-height: 1.5;
+		color: var(--ink-2);
+		white-space: pre-wrap;
 	}
 	.tasting-card {
 		margin: 0 16px 12px;

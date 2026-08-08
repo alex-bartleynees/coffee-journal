@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
-	import { createDraft } from '$lib/components/new-brew/DraftBrew';
+	import { createDraft, loadDraft, saveDraft, clearDraft } from '$lib/components/new-brew/DraftBrew';
 	import { newId } from '$lib/data/id';
 	import BeanStep from '$lib/components/new-brew/BeanStep.svelte';
 	import BrewStep from '$lib/components/new-brew/BrewStep.svelte';
@@ -16,7 +17,32 @@
 	let tab = $state(0);
 	const draft = $state(createDraft(journal.beans[0]?.id ?? ''));
 
+	// Restore an in-progress draft (if any) only after mount, so server/client
+	// initial render agree; start autosaving once restored.
+	let persisting = false;
+	onMount(() => {
+		const restored = loadDraft();
+		if (restored) {
+			Object.assign(draft, restored.draft);
+			tab = restored.tab;
+		}
+		persisting = true;
+	});
+
+	$effect(() => {
+		// Read every field + tab so this re-runs on any edit, then mirror to storage.
+		const snapshot = $state.snapshot(draft);
+		const currentTab = tab;
+		if (persisting) saveDraft(snapshot, currentTab);
+	});
+
+	function endDraft() {
+		persisting = false;
+		clearDraft();
+	}
+
 	function close() {
+		endDraft();
 		history.length > 1 ? history.back() : goto('/');
 	}
 
@@ -31,10 +57,12 @@
 			date: referenceDate,
 			time: new Date().toTimeString().slice(0, 5),
 			ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',
+			recipeNotes: draft.recipeNotes.trim() || undefined,
 			rating2: draft.withMilk ? draft.rating2 : null
 		};
 		journal.addBrew(brew);
-		goto(`/brew/${brew.id}`);
+		endDraft();
+		goto(`/brew/${brew.id}`, { replaceState: true });
 	}
 </script>
 

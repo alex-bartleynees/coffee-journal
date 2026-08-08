@@ -1,7 +1,13 @@
 /// <reference lib="webworker" />
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import wasmUrl from '@sqlite.org/sqlite-wasm/sqlite3.wasm?url';
-import { SCHEMA_SQL, SCHEMA_VERSION, SYNC_COLUMNS, SYNCABLE_TABLES } from './schema';
+import {
+	BREW_MIGRATION_COLUMNS,
+	SCHEMA_SQL,
+	SCHEMA_VERSION,
+	SYNC_COLUMNS,
+	SYNCABLE_TABLES
+} from './schema';
 
 export type ExecMsg = { id: number; type: 'exec'; sql: string; bind?: (string | number | null)[] };
 export type QueryMsg = { id: number; type: 'query'; sql: string; bind?: (string | number | null)[] };
@@ -44,6 +50,12 @@ function migrate(database: Db): void {
 			if (!existing.has(col)) {
 				database.exec({ sql: `ALTER TABLE ${table} ADD COLUMN ${col} ${def}` });
 			}
+		}
+	}
+	const brewColumns = columnNames(database, 'brews');
+	for (const [col, def] of BREW_MIGRATION_COLUMNS) {
+		if (!brewColumns.has(col)) {
+			database.exec({ sql: `ALTER TABLE brews ADD COLUMN ${col} ${def}` });
 		}
 	}
 	database.exec({

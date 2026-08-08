@@ -51,6 +51,7 @@ export interface Brew {
 	extractionTime: number;
 	temperature: number;
 	ratio: string;
+	recipeNotes?: string;
 	rating: number;
 	rating2?: number | null;
 	aroma?: string;

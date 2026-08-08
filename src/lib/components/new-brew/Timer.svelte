@@ -155,7 +155,7 @@
 		padding: 14px 30px;
 		border-radius: 100px;
 		background: var(--ink);
-		color: white;
+		color: var(--paper);
 		display: flex;
 		align-items: center;
 		gap: 8px;
