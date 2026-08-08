@@ -5,7 +5,7 @@ replicaCount: 1
 image:
   repository: creativefree/coffee-journal-app
   pullPolicy: Always
-  tag: "b1af0e5"
+  tag: "5ec61e0"
 
 # nginx (unprivileged) listens here; the SPA is fully static, no runtime env.
 containerPort: 8080
