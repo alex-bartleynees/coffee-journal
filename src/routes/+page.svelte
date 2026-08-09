@@ -4,8 +4,6 @@
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import BrewDetail from '$lib/components/BrewDetail.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
-	import { auth } from '$lib/stores/auth.svelte';
-	import { sync } from '$lib/sync/engine.svelte';
 	import { search } from '$lib/stores/search.svelte';
 	import { METHOD_LABELS, beanById } from '$lib/data/sample';
 
@@ -82,18 +80,6 @@
 				<button class="icon-btn" type="button" aria-label="Search" onclick={search.open}><Icon name="search" size={18} /></button>
 			{/snippet}
 		</TopBar>
-
-		{#if !auth.signedIn}
-			<a class="sync-banner" href="/login">
-				<span>Not signed in — this journal lives only on this device.</span>
-				<span class="sync-banner-cta">Sign in to sync <Icon name="chevron" size={12} /></span>
-			</a>
-		{:else if sync.subscriptionRequired}
-			<a class="sync-banner" href="/pricing">
-				<span>Signed in — this journal still lives only on this device.</span>
-				<span class="sync-banner-cta">Enable sync <Icon name="chevron" size={12} /></span>
-			</a>
-		{/if}
 
 		<div class="stats-strip">
 			<div class="stat-item">
@@ -187,28 +173,6 @@
 </div>
 
 <style>
-	.sync-banner {
-		margin: 0 16px 14px;
-		padding: 10px 14px;
-		background: var(--card-2);
-		border: 1px solid var(--line-soft);
-		border-radius: var(--r-md);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-		font-size: 11.5px;
-		color: var(--ink-3);
-	}
-	.sync-banner-cta {
-		display: flex;
-		align-items: center;
-		gap: 3px;
-		color: var(--accent-2);
-		font-weight: 600;
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
 	.stats-strip {
 		margin: 4px 16px 18px;
 		padding: 14px 18px;

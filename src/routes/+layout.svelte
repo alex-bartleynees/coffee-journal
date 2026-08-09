@@ -4,6 +4,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import Icon from '$lib/icons/Icon.svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import SyncStatus from '$lib/components/SyncStatus.svelte';
 	import SearchOverlay from '$lib/components/SearchOverlay.svelte';
 	import { page } from '$app/state';
 	import { journal } from '$lib/stores/journal.svelte';
@@ -74,6 +75,7 @@
 		{@render children()}
 
 		{#if isTabRoot}
+			<div class="mobile-sync-status"><SyncStatus /></div>
 			<nav class="bottom-nav">
 				<a class="nav-btn" class:active={page.url.pathname === '/'} href="/">
 					<span class="nav-icon"><Icon name="journal" size={20} /></span>
@@ -126,6 +128,12 @@
 	.sidebar-slot {
 		display: none;
 	}
+	.mobile-sync-status {
+		padding: 7px 16px;
+		border-top: 1px solid var(--line-soft);
+		background: var(--paper);
+		text-align: center;
+	}
 
 	@media (min-width: 860px) {
 		:global(.app) {
@@ -133,6 +141,9 @@
 		}
 		.sidebar-slot {
 			display: block;
+		}
+		.mobile-sync-status {
+			display: none;
 		}
 		:global(.bottom-nav) {
 			display: none;

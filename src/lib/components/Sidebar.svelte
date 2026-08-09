@@ -1,9 +1,8 @@
 <script lang="ts">
 	import Icon from '$lib/icons/Icon.svelte';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import SyncStatus from '$lib/components/SyncStatus.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
-	import { auth } from '$lib/stores/auth.svelte';
-	import { sync } from '$lib/sync/engine.svelte';
 	import { page } from '$app/state';
 	import type { IconName } from '$lib/icons/Icon.svelte';
 	import { search } from '$lib/stores/search.svelte';
@@ -48,13 +47,7 @@
 	</a>
 
 	<div class="sidebar-footer">
-		{#if auth.signedIn && sync.subscriptionRequired}
-			<a class="sync-status" href="/pricing">Sync off — enable Bloom Sync</a>
-		{:else if auth.signedIn}
-			<div class="sync-status synced">Synced{auth.email ? ` · ${auth.email}` : ''}</div>
-		{:else}
-			<a class="sync-status" href="/login">Not signed in — sign in to sync</a>
-		{/if}
+		<div class="sidebar-sync"><SyncStatus showEmail /></div>
 		<ThemeToggle />
 	</div>
 </aside>
@@ -179,15 +172,8 @@
 		align-items: center;
 		gap: 10px;
 	}
-	.sync-status {
+	.sidebar-sync {
 		flex: 1;
 		min-width: 0;
-		font-size: 11px;
-		color: var(--ink-3);
-		display: block;
-	}
-	.sync-status.synced {
-		color: var(--accent);
-		font-weight: 500;
 	}
 </style>
