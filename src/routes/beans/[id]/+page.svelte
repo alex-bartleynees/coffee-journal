@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import BackHeader from '$lib/components/BackHeader.svelte';
 	import BeanDetail from '$lib/components/BeanDetail.svelte';
-	import Icon from '$lib/icons/Icon.svelte';
+	import DetailActionMenu from '$lib/components/DetailActionMenu.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 
 	const bean = $derived(journal.beans.find((b) => b.id === page.params.id));
@@ -17,7 +17,7 @@
 	<div class="screen">
 		<BackHeader onBack={() => history.back()}>
 			{#snippet action()}
-				<button class="icon-btn"><Icon name="dots" size={18} /></button>
+				<DetailActionMenu editHref={`/beans/new?edit=${bean.id}`} label="Bean actions" />
 			{/snippet}
 		</BackHeader>
 

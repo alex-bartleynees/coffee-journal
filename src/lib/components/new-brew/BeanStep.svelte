@@ -6,9 +6,10 @@
 	interface Props {
 		draft: DraftBrew;
 		beans: Bean[];
+		includeBeanId?: string;
 	}
 
-	let { draft, beans }: Props = $props();
+	let { draft, beans, includeBeanId }: Props = $props();
 
 	const methods: { id: Method; label: string }[] = [
 		{ id: 'espresso', label: 'Espresso' },
@@ -22,7 +23,7 @@
 <div class="step">
 	<div class="hint">Pick a bean from your library.</div>
 	<div class="bean-picker">
-		{#each beans.filter((b) => !b.finished) as bean (bean.id)}
+		{#each beans.filter((b) => !b.finished || b.id === includeBeanId) as bean (bean.id)}
 			<button class="bean-option" class:selected={draft.beanId === bean.id} onclick={() => (draft.beanId = bean.id)}>
 				<span class="bean-bar" style="background:{roastColor[bean.roast]}"></span>
 				<span class="bean-option-info">

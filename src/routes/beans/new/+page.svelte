@@ -1,11 +1,16 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import BackHeader from '$lib/components/BackHeader.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { TASTE_DESCRIPTORS } from '$lib/data/sample';
 	import { newId } from '$lib/data/id';
 	import type { Bean, Roast } from '$lib/data/types';
+
+	const editId = $derived(page.url.searchParams.get('edit'));
+	const existingBean = $derived(editId ? journal.beans.find((bean) => bean.id === editId) : undefined);
+	let initializedEditId: string | null = null;
 
 	const today = journal.brews.reduce(
 		(max, b) => (b.date > max ? b.date : max),
@@ -39,6 +44,29 @@
 		{ id: 'dark', label: 'Dark' }
 	];
 
+	$effect(() => {
+		if (!editId || !existingBean || initializedEditId === editId) return;
+		name = existingBean.name;
+		roaster = existingBean.roaster;
+		origin = existingBean.origin === '—' ? '' : existingBean.origin;
+		process = existingBean.process === '—' ? '' : existingBean.process;
+		varietal = existingBean.varietal === '—' ? '' : existingBean.varietal;
+		roast = existingBean.roast;
+		altitude = existingBean.altitude === '—' ? '' : existingBean.altitude;
+		tasting = [...existingBean.tasting];
+		const categories = Object.keys(TASTE_DESCRIPTORS);
+		const firstCategory = categories[0];
+		if (firstCategory) {
+			const known = new Set(Object.values(TASTE_DESCRIPTORS).flat());
+			customTasting[firstCategory] = existingBean.tasting.filter((item) => !known.has(item));
+		}
+		dateOpened = existingBean.dateOpened;
+		roastDate = existingBean.roastDate;
+		pricePerKg = existingBean.pricePerKg;
+		bagWeight = existingBean.bagWeight;
+		initializedEditId = editId;
+	});
+
 	function toggleTasting(t: string) {
 		tasting = tasting.includes(t) ? tasting.filter((x) => x !== t) : [...tasting, t];
 	}
@@ -61,6 +89,10 @@
 	}
 
 	function close() {
+		if (editId) {
+			goto(`/beans/${editId}`, { replaceState: true });
+			return;
+		}
 		history.length > 1 ? history.back() : goto('/beans');
 	}
 
@@ -68,7 +100,7 @@
 		if (!canSave) return;
 		for (const category of Object.keys(TASTE_DESCRIPTORS)) addCustomTasting(category);
 		const bean: Bean = {
-			id: newId('b'),
+			id: existingBean?.id ?? newId('b'),
 			name: name.trim(),
 			roaster: roaster.trim(),
 			origin: origin.trim() || '—',
@@ -81,15 +113,26 @@
 			roastDate,
 			pricePerKg,
 			bagWeight,
-			brews: 0
+			brews: existingBean?.brews ?? 0,
+			finished: existingBean?.finished
 		};
-		journal.addBean(bean);
+		if (existingBean) journal.updateBean(bean);
+		else journal.addBean(bean);
 		goto(`/beans/${bean.id}`, { replaceState: true });
 	}
 </script>
 
+{#if editId && journal.ready && !existingBean}
+	<div class="screen">
+		<BackHeader onBack={() => goto('/beans')} label="Edit bean" />
+		<div class="not-found">
+			<h1>Bean not found</h1>
+			<a class="btn btn-primary" href="/beans">Back to beans</a>
+		</div>
+	</div>
+{:else}
 <div class="screen">
-	<BackHeader onBack={close} label="New bean" />
+	<BackHeader onBack={close} label={editId ? 'Edit bean' : 'New bean'} />
 
 	<div class="form">
 		<div class="field">
@@ -201,10 +244,11 @@
 
 	<div class="form-footer">
 		<button class="btn btn-accent" style="flex: 1" disabled={!canSave} onclick={save}>
-			<Icon name="check" size={16} /> Save bean
+			<Icon name="check" size={16} /> {editId ? 'Save changes' : 'Save bean'}
 		</button>
 	</div>
 </div>
+{/if}
 
 <style>
 	.form {
@@ -212,6 +256,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 14px;
+	}
+	.not-found {
+		padding: 48px 20px;
+		text-align: center;
+	}
+	.not-found h1 {
+		font-family: var(--serif);
+		font-style: italic;
+		font-weight: 500;
 	}
 	.segmented {
 		display: flex;

@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import BackHeader from '$lib/components/BackHeader.svelte';
 	import GrinderDetail from '$lib/components/GrinderDetail.svelte';
-	import Icon from '$lib/icons/Icon.svelte';
+	import DetailActionMenu from '$lib/components/DetailActionMenu.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { beanById } from '$lib/data/sample';
 
@@ -14,7 +14,7 @@
 {#if grinder}
 	<BackHeader onBack={() => history.back()} label="Grinder">
 		{#snippet action()}
-			<button class="icon-btn"><Icon name="dots" size={16} /></button>
+			<DetailActionMenu editHref={`/grinders/new?edit=${grinder.id}`} label="Grinder actions" />
 		{/snippet}
 	</BackHeader>
 

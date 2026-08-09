@@ -1,11 +1,16 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import BackHeader from '$lib/components/BackHeader.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { METHOD_LABELS } from '$lib/data/sample';
 	import { newId } from '$lib/data/id';
 	import type { Grinder, GrinderType, Method } from '$lib/data/types';
+
+	const editId = $derived(page.url.searchParams.get('edit'));
+	const existingGrinder = $derived(editId ? journal.grinders.find((grinder) => grinder.id === editId) : undefined);
+	let initializedEditId: string | null = null;
 
 	let name = $state('');
 	let maker = $state('');
@@ -26,6 +31,21 @@
 	];
 	const methods: Method[] = ['espresso', 'v60', 'aeropress'];
 
+	$effect(() => {
+		if (!editId || !existingGrinder || initializedEditId === editId) return;
+		name = existingGrinder.name;
+		maker = existingGrinder.maker;
+		type = existingGrinder.type;
+		burr = existingGrinder.burr === '—' ? '' : existingGrinder.burr;
+		rpm = existingGrinder.rpm;
+		rangeMin = existingGrinder.range[0];
+		rangeMax = existingGrinder.range[1];
+		step = existingGrinder.step;
+		notes = existingGrinder.notes ?? '';
+		presets = existingGrinder.presets.map((preset) => ({ ...preset }));
+		initializedEditId = editId;
+	});
+
 	function addPreset() {
 		presets = [...presets, { method: 'espresso', setting: rangeMin }];
 	}
@@ -34,13 +54,17 @@
 	}
 
 	function close() {
+		if (editId) {
+			goto(`/grinders/${editId}`, { replaceState: true });
+			return;
+		}
 		history.length > 1 ? history.back() : goto('/grinders');
 	}
 
 	function save() {
 		if (!canSave) return;
 		const grinder: Grinder = {
-			id: newId('g'),
+			id: existingGrinder?.id ?? newId('g'),
 			name: name.trim(),
 			maker: maker.trim(),
 			range: [rangeMin, rangeMax],
@@ -51,13 +75,23 @@
 			notes: notes.trim() || undefined,
 			presets
 		};
-		journal.addGrinder(grinder);
+		if (existingGrinder) journal.updateGrinder(grinder);
+		else journal.addGrinder(grinder);
 		goto(`/grinders/${grinder.id}`, { replaceState: true });
 	}
 </script>
 
+{#if editId && journal.ready && !existingGrinder}
+	<div class="screen">
+		<BackHeader onBack={() => goto('/grinders')} label="Edit grinder" />
+		<div class="not-found">
+			<h1>Grinder not found</h1>
+			<a class="btn btn-primary" href="/grinders">Back to grinders</a>
+		</div>
+	</div>
+{:else}
 <div class="screen">
-	<BackHeader onBack={close} label="New grinder" />
+	<BackHeader onBack={close} label={editId ? 'Edit grinder' : 'New grinder'} />
 
 	<div class="form">
 		<div class="field">
@@ -141,10 +175,11 @@
 
 	<div class="form-footer">
 		<button class="btn btn-accent" style="flex: 1" disabled={!canSave} onclick={save}>
-			<Icon name="check" size={16} /> Save grinder
+			<Icon name="check" size={16} /> {editId ? 'Save changes' : 'Save grinder'}
 		</button>
 	</div>
 </div>
+{/if}
 
 <style>
 	.form {
@@ -152,6 +187,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 14px;
+	}
+	.not-found {
+		padding: 48px 20px;
+		text-align: center;
+	}
+	.not-found h1 {
+		font-family: var(--serif);
+		font-style: italic;
+		font-weight: 500;
 	}
 	.segmented {
 		display: flex;

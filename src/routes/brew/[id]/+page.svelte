@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import BackHeader from '$lib/components/BackHeader.svelte';
 	import BrewDetail from '$lib/components/BrewDetail.svelte';
+	import DetailActionMenu from '$lib/components/DetailActionMenu.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { beanById } from '$lib/data/sample';
@@ -30,7 +31,7 @@
 							<Icon name="compare" size={16} />
 						</a>
 					{/if}
-					<button class="icon-btn"><Icon name="dots" size={18} /></button>
+					<DetailActionMenu editHref={`/new?edit=${brew.id}`} label="Brew actions" />
 				</div>
 			{/snippet}
 		</BackHeader>

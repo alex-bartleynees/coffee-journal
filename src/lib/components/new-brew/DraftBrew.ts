@@ -1,4 +1,4 @@
-import type { Method } from '$lib/data/types';
+import type { Brew, Method } from '$lib/data/types';
 
 export interface DraftBrew {
 	beanId: string;
@@ -45,6 +45,31 @@ export function createDraft(beanId: string): DraftBrew {
 		cutsThruMilk: false,
 		buyAgain: null,
 		bestFor: null
+	};
+}
+
+export function draftFromBrew(brew: Brew): DraftBrew {
+	return {
+		beanId: brew.beanId,
+		method: brew.method,
+		withMilk: brew.withMilk ?? false,
+		grinder: brew.grinder,
+		grindSetting: brew.grindSetting,
+		doseIn: brew.doseIn,
+		yieldOut: brew.yieldOut,
+		extractionTime: brew.extractionTime,
+		temperature: brew.temperature,
+		recipeNotes: brew.recipeNotes ?? '',
+		aroma: brew.aroma ?? '',
+		flavor: brew.flavor ?? '',
+		body: brew.body ?? '',
+		finish: brew.finish ?? '',
+		descriptors: [...(brew.descriptors ?? [])],
+		rating: brew.rating,
+		rating2: brew.rating2 ?? null,
+		cutsThruMilk: brew.cutsThruMilk ?? false,
+		buyAgain: brew.buyAgain ?? null,
+		bestFor: brew.bestFor ?? null
 	};
 }
 

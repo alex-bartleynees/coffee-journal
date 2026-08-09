@@ -77,6 +77,52 @@ function addGrinder(grinder: Grinder): void {
 	sync.schedule();
 }
 
+function updateBrew(updated: Brew): void {
+	const existing = brews.find((brew) => brew.id === updated.id);
+	if (!existing) {
+		console.error(`Cannot update missing brew ${updated.id}`);
+		return;
+	}
+
+	brews = brews
+		.map((brew) => (brew.id === updated.id ? updated : brew))
+		.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
+	if (existing.beanId !== updated.beanId) {
+		beans = beans.map((bean) => {
+			if (bean.id === existing.beanId) return { ...bean, brews: Math.max(0, bean.brews - 1) };
+			if (bean.id === updated.beanId) return { ...bean, brews: bean.brews + 1 };
+			return bean;
+		});
+	}
+	insertBrew(updated).catch(console.error);
+	sync.schedule();
+}
+
+function updateBean(updated: Bean): void {
+	const existing = beans.find((bean) => bean.id === updated.id);
+	if (!existing) {
+		console.error(`Cannot update missing bean ${updated.id}`);
+		return;
+	}
+	beans = beans
+		.map((bean) => (bean.id === updated.id ? { ...updated, brews: existing.brews } : bean))
+		.sort((a, b) => b.dateOpened.localeCompare(a.dateOpened));
+	insertBean({ ...updated, brews: existing.brews }).catch(console.error);
+	sync.schedule();
+}
+
+function updateGrinder(updated: Grinder): void {
+	if (!grinders.some((grinder) => grinder.id === updated.id)) {
+		console.error(`Cannot update missing grinder ${updated.id}`);
+		return;
+	}
+	grinders = grinders
+		.map((grinder) => (grinder.id === updated.id ? updated : grinder))
+		.sort((a, b) => a.name.localeCompare(b.name));
+	insertGrinder(updated).catch(console.error);
+	sync.schedule();
+}
+
 function deleteBrew(id: string): void {
 	const brew = brews.find((b) => b.id === id);
 	brews = brews.filter((b) => b.id !== id);
@@ -114,6 +160,9 @@ export const journal = {
 	addBrew,
 	addBean,
 	addGrinder,
+	updateBrew,
+	updateBean,
+	updateGrinder,
 	deleteBrew,
 	deleteBean,
 	deleteGrinder

@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
-	import { createDraft, loadDraft, saveDraft, clearDraft } from '$lib/components/new-brew/DraftBrew';
+	import { createDraft, draftFromBrew, loadDraft, saveDraft, clearDraft } from '$lib/components/new-brew/DraftBrew';
 	import { newId } from '$lib/data/id';
 	import BeanStep from '$lib/components/new-brew/BeanStep.svelte';
 	import BrewStep from '$lib/components/new-brew/BrewStep.svelte';
@@ -13,20 +14,31 @@
 
 	const TABS = ['Bean', 'Brew', 'Taste', 'Verdict'];
 	const TITLES = ['What bean?', 'Recipe', 'How was it?', 'The verdict'];
+	const editId = $derived(page.url.searchParams.get('edit'));
+	const existingBrew = $derived(editId ? journal.brews.find((brew) => brew.id === editId) : undefined);
 
 	let tab = $state(0);
 	const draft = $state(createDraft(journal.beans[0]?.id ?? ''));
+	let initializedEditId: string | null = null;
 
 	// Restore an in-progress draft (if any) only after mount, so server/client
 	// initial render agree; start autosaving once restored.
 	let persisting = false;
 	onMount(() => {
+		if (editId) return;
 		const restored = loadDraft();
 		if (restored) {
 			Object.assign(draft, restored.draft);
 			tab = restored.tab;
 		}
 		persisting = true;
+	});
+
+	$effect(() => {
+		if (!editId || !existingBrew || initializedEditId === editId) return;
+		Object.assign(draft, draftFromBrew(existingBrew));
+		tab = 0;
+		initializedEditId = editId;
 	});
 
 	$effect(() => {
@@ -42,34 +54,55 @@
 	}
 
 	function close() {
+		if (editId) {
+			goto(`/brew/${editId}`, { replaceState: true });
+			return;
+		}
 		endDraft();
 		history.length > 1 ? history.back() : goto('/');
 	}
 
 	function save() {
+		if (editId && !existingBrew) return;
 		const referenceDate = journal.brews.reduce(
 			(max, b) => (b.date > max ? b.date : max),
 			journal.brews[0]?.date ?? new Date().toISOString().slice(0, 10)
 		);
 		const brew: Brew = {
 			...draft,
-			id: newId('br'),
-			date: referenceDate,
-			time: new Date().toTimeString().slice(0, 5),
+			id: existingBrew?.id ?? newId('br'),
+			date: existingBrew?.date ?? referenceDate,
+			time: existingBrew?.time ?? new Date().toTimeString().slice(0, 5),
 			ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',
 			recipeNotes: draft.recipeNotes.trim() || undefined,
 			rating2: draft.withMilk ? draft.rating2 : null
 		};
-		journal.addBrew(brew);
-		endDraft();
+		if (existingBrew) journal.updateBrew(brew);
+		else {
+			journal.addBrew(brew);
+			endDraft();
+		}
 		goto(`/brew/${brew.id}`, { replaceState: true });
 	}
 </script>
 
+{#if editId && journal.ready && !existingBrew}
+	<div class="new-brew">
+		<div class="nb-header">
+			<button class="icon-btn" onclick={() => goto('/')} aria-label="Close"><Icon name="close" size={18} /></button>
+			<div class="nb-step-count">Edit brew</div>
+			<div style="width: 62px"></div>
+		</div>
+		<div class="not-found">
+			<h1>Brew not found</h1>
+			<a class="btn btn-primary" href="/">Back to journal</a>
+		</div>
+	</div>
+{:else}
 <div class="new-brew">
 	<div class="nb-header">
 		<button class="icon-btn" onclick={close} aria-label="Close"><Icon name="close" size={18} /></button>
-		<div class="nb-step-count">Step {tab + 1} / 4</div>
+		<div class="nb-step-count">{editId ? 'Edit brew · ' : ''}Step {tab + 1} / 4</div>
 		<button class="nb-save" onclick={save}>Save</button>
 	</div>
 
@@ -85,7 +118,7 @@
 
 	<div class="screen nb-content">
 		{#if tab === 0}
-			<BeanStep {draft} beans={journal.beans} />
+			<BeanStep {draft} beans={journal.beans} includeBeanId={existingBrew?.beanId} />
 		{:else if tab === 1}
 			<BrewStep {draft} grinders={journal.grinders} />
 		{:else if tab === 2}
@@ -106,11 +139,12 @@
 			</button>
 		{:else}
 			<button class="btn btn-accent" style="flex: 2" onclick={save}>
-				<Icon name="check" size={16} /> Save brew
+				<Icon name="check" size={16} /> {editId ? 'Save changes' : 'Save brew'}
 			</button>
 		{/if}
 	</div>
 </div>
+{/if}
 
 <style>
 	.new-brew {
@@ -170,5 +204,14 @@
 		border-top: 1px solid var(--line-soft);
 		display: flex;
 		gap: 10px;
+	}
+	.not-found {
+		padding: 64px 20px;
+		text-align: center;
+	}
+	.not-found h1 {
+		font-family: var(--serif);
+		font-style: italic;
+		font-weight: 500;
 	}
 </style>
