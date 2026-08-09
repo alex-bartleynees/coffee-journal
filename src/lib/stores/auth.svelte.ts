@@ -11,12 +11,23 @@
 // blocks app usage in either mode.
 
 import { BFF_MODE, getCsrfToken } from '$lib/bff';
+import { registerCurrentUser } from '$lib/users';
 
 let signedIn = $state(false);
 let email = $state<string | null>(null);
 let checked = $state(false);
 
 type BffUser = { isAuthenticated: boolean; claims: { type: string; value: string }[] };
+
+async function registerSignedInUser(): Promise<void> {
+	try {
+		if (!(await registerCurrentUser(await getCsrfToken()))) {
+			console.warn('[auth] Bloom user registration failed; will retry on next app load');
+		}
+	} catch (e) {
+		console.warn('[auth] Bloom user registration failed; will retry on next app load', e);
+	}
+}
 
 /** Resolve the current session. No-op in dev mode. Never throws. */
 async function init(): Promise<void> {
@@ -30,6 +41,9 @@ async function init(): Promise<void> {
 			const user = (await res.json()) as BffUser;
 			signedIn = user.isAuthenticated === true;
 			email = user.claims.find((c) => c.type === 'email')?.value ?? null;
+			if (signedIn) {
+				void registerSignedInUser();
+			}
 		}
 	} catch (e) {
 		console.warn('[auth] session check failed:', e);

@@ -21,3 +21,18 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
 		return 'failed';
 	}
 }
+
+/** Register the authenticated Keycloak identity as a Bloom user. This does not
+ * grant sync access; the API's entitlement gate remains authoritative. */
+export async function registerCurrentUser(csrfToken: string): Promise<boolean> {
+	try {
+		const response = await fetch('/api/users/me', {
+			method: 'POST',
+			credentials: 'include',
+			headers: { 'X-CSRF-TOKEN': csrfToken }
+		});
+		return response.ok;
+	} catch {
+		return false;
+	}
+}
