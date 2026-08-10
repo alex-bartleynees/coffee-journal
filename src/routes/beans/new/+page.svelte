@@ -7,6 +7,7 @@
 	import { TASTE_DESCRIPTORS } from '$lib/data/sample';
 	import { newId } from '$lib/data/id';
 	import type { Bean, Roast } from '$lib/data/types';
+	import { prepareBeanPhoto } from '$lib/images/bean-photo';
 
 	const editId = $derived(page.url.searchParams.get('edit'));
 	const existingBean = $derived(editId ? journal.beans.find((bean) => bean.id === editId) : undefined);
@@ -35,6 +36,13 @@
 	let roastDate = $state(today);
 	let pricePerKg = $state(60);
 	let bagWeight = $state(250);
+	let photoInput = $state<HTMLInputElement>();
+	let pendingPhoto = $state<Blob | null>(null);
+	let photoRemoved = $state(false);
+	let photoBusy = $state(false);
+	let photoError = $state<string | null>(null);
+	let previewUrl = $state<string | null>(null);
+	const displayedPhoto = $derived(previewUrl ?? (photoRemoved ? undefined : existingBean?.photoUrl));
 
 	const canSave = $derived(name.trim().length > 0 && roaster.trim().length > 0);
 
@@ -67,6 +75,38 @@
 		initializedEditId = editId;
 	});
 
+	$effect(() => {
+		if (!pendingPhoto) {
+			previewUrl = null;
+			return;
+		}
+		const url = URL.createObjectURL(pendingPhoto);
+		previewUrl = url;
+		return () => URL.revokeObjectURL(url);
+	});
+
+	async function choosePhoto(event: Event) {
+		const file = (event.currentTarget as HTMLInputElement).files?.[0];
+		if (!file) return;
+		photoBusy = true;
+		photoError = null;
+		try {
+			pendingPhoto = await prepareBeanPhoto(file);
+			photoRemoved = false;
+		} catch (error) {
+			photoError = error instanceof Error ? error.message : 'Could not process this photo.';
+		} finally {
+			photoBusy = false;
+			if (photoInput) photoInput.value = '';
+		}
+	}
+
+	function removePhoto() {
+		pendingPhoto = null;
+		photoRemoved = true;
+		photoError = null;
+	}
+
 	function toggleTasting(t: string) {
 		tasting = tasting.includes(t) ? tasting.filter((x) => x !== t) : [...tasting, t];
 	}
@@ -96,7 +136,7 @@
 		history.length > 1 ? history.back() : goto('/beans');
 	}
 
-	function save() {
+	async function save() {
 		if (!canSave) return;
 		for (const category of Object.keys(TASTE_DESCRIPTORS)) addCustomTasting(category);
 		const bean: Bean = {
@@ -118,6 +158,13 @@
 		};
 		if (existingBean) journal.updateBean(bean);
 		else journal.addBean(bean);
+		try {
+			if (pendingPhoto) await journal.saveBeanPhoto(bean.id, pendingPhoto);
+			else if (photoRemoved && existingBean?.photoUrl) await journal.removeBeanPhoto(bean.id);
+		} catch (error) {
+			photoError = error instanceof Error ? error.message : 'Could not save this photo.';
+			return;
+		}
 		goto(`/beans/${bean.id}`, { replaceState: true });
 	}
 </script>
@@ -135,6 +182,36 @@
 	<BackHeader onBack={close} label={editId ? 'Edit bean' : 'New bean'} />
 
 	<div class="form">
+		<div class="field">
+			<div class="field-label">Bag photo</div>
+			<input
+				class="photo-input"
+				bind:this={photoInput}
+				type="file"
+				accept="image/*"
+				capture="environment"
+				onchange={choosePhoto}
+			/>
+			{#if displayedPhoto}
+				<div class="photo-preview">
+					<img src={displayedPhoto} alt="Selected coffee bag" />
+					<div class="photo-actions">
+						<button class="photo-button" type="button" disabled={photoBusy} onclick={() => photoInput?.click()}>
+							{photoBusy ? 'Processing…' : 'Replace photo'}
+						</button>
+						<button class="photo-button remove" type="button" onclick={removePhoto}>Remove</button>
+					</div>
+				</div>
+			{:else}
+				<button class="photo-picker" type="button" disabled={photoBusy} onclick={() => photoInput?.click()}>
+					<Icon name="plus" size={18} />
+					<span>{photoBusy ? 'Processing photo…' : 'Take or choose a bag photo'}</span>
+				</button>
+			{/if}
+			{#if photoError}<p class="photo-error" role="alert">{photoError}</p>{/if}
+			<p class="photo-help">Stored only on this device. Photos are resized before saving.</p>
+		</div>
+
 		<div class="field">
 			<div class="field-label">Name</div>
 			<input class="field-input" placeholder="Suke Quto" bind:value={name} />
@@ -257,6 +334,49 @@
 		flex-direction: column;
 		gap: 14px;
 	}
+	.photo-input {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+		clip-path: inset(50%);
+	}
+	.photo-picker {
+		min-height: 112px;
+		border: 1px dashed var(--line);
+		border-radius: var(--r-lg);
+		background: var(--card-2);
+		color: var(--ink-2);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		font-size: 13px;
+		font-weight: 600;
+	}
+	.photo-preview img {
+		width: 100%;
+		max-height: 300px;
+		object-fit: cover;
+		border-radius: var(--r-lg);
+		background: var(--card-2);
+	}
+	.photo-actions { display: flex; gap: 8px; margin-top: 8px; }
+	.photo-button {
+		padding: 8px 12px;
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		background: var(--card-2);
+		color: var(--ink-2);
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.photo-button.remove { color: var(--accent-2); }
+	.photo-help, .photo-error { margin: 7px 2px 0; font-size: 11px; color: var(--ink-3); }
+	.photo-error { color: var(--accent-2); }
 	.not-found {
 		padding: 48px 20px;
 		text-align: center;

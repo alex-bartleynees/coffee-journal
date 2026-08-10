@@ -9,8 +9,9 @@ import {
 	SYNCABLE_TABLES
 } from './schema';
 
-export type ExecMsg = { id: number; type: 'exec'; sql: string; bind?: (string | number | null)[] };
-export type QueryMsg = { id: number; type: 'query'; sql: string; bind?: (string | number | null)[] };
+export type SqlValue = string | number | null | Uint8Array;
+export type ExecMsg = { id: number; type: 'exec'; sql: string; bind?: SqlValue[] };
+export type QueryMsg = { id: number; type: 'query'; sql: string; bind?: SqlValue[] };
 export type WorkerMsg = ExecMsg | QueryMsg;
 
 export type WorkerReply =
@@ -21,7 +22,7 @@ export type WorkerReply =
 type Db = {
 	exec(opts: {
 		sql: string;
-		bind?: (string | number | null)[];
+		bind?: SqlValue[];
 		rowMode?: 'object';
 		resultRows?: Record<string, unknown>[];
 	}): void;

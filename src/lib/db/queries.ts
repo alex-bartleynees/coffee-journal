@@ -37,6 +37,20 @@ export type GrinderRow = {
 };
 
 export type PresetRow = { grinder_id: string; method: string; setting: number };
+type BeanPhotoRow = { bean_id: string; mime_type: string; image_data: Uint8Array; updated_at: number };
+
+const photoUrls = new Map<string, { updatedAt: number; url: string }>();
+
+function photoUrl(row: BeanPhotoRow): string {
+	const existing = photoUrls.get(row.bean_id);
+	if (existing?.updatedAt === row.updated_at) return existing.url;
+	if (existing) URL.revokeObjectURL(existing.url);
+	const bytes = new Uint8Array(row.image_data.byteLength);
+	bytes.set(row.image_data);
+	const url = URL.createObjectURL(new Blob([bytes.buffer], { type: row.mime_type }));
+	photoUrls.set(row.bean_id, { updatedAt: row.updated_at, url });
+	return url;
+}
 
 export function beanFromRow(r: BeanRow): Bean {
 	return {
@@ -92,7 +106,32 @@ export async function getAllBeans(): Promise<Bean[]> {
 		GROUP BY b.id
 		ORDER BY b.date_opened DESC
 	`);
-	return rows.map(beanFromRow);
+	const photos = await query<BeanPhotoRow>('SELECT bean_id, mime_type, image_data, updated_at FROM bean_photos');
+	const photosByBean = new Map(photos.map((photo) => [photo.bean_id, photoUrl(photo)]));
+	return rows.map((row) => {
+		const bean = beanFromRow(row);
+		bean.photoUrl = photosByBean.get(bean.id);
+		return bean;
+	});
+}
+
+export async function upsertBeanPhoto(beanId: string, image: Blob): Promise<string> {
+	const bytes = new Uint8Array(await image.arrayBuffer());
+	const updatedAt = Date.now();
+	await exec(
+		`INSERT INTO bean_photos (bean_id, mime_type, image_data, updated_at) VALUES (?, ?, ?, ?)
+		 ON CONFLICT(bean_id) DO UPDATE SET mime_type = excluded.mime_type,
+		 image_data = excluded.image_data, updated_at = excluded.updated_at`,
+		[beanId, image.type, bytes, updatedAt]
+	);
+	return photoUrl({ bean_id: beanId, mime_type: image.type, image_data: bytes, updated_at: updatedAt });
+}
+
+export async function deleteBeanPhoto(beanId: string): Promise<void> {
+	await exec('DELETE FROM bean_photos WHERE bean_id = ?', [beanId]);
+	const existing = photoUrls.get(beanId);
+	if (existing) URL.revokeObjectURL(existing.url);
+	photoUrls.delete(beanId);
 }
 
 export async function getAllBrews(): Promise<Brew[]> {

@@ -4,7 +4,7 @@
  * sync-metadata columns (`updated_at` / `deleted` / `dirty`) to the three
  * syncable tables; v2 added brew recipe notes — see [[Sync-Protocol]].
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Sync-metadata columns present on every syncable table (beans/grinders/brews):
@@ -46,6 +46,14 @@ export const SCHEMA_SQL = `
 		updated_at   INTEGER NOT NULL DEFAULT 0,
 		deleted      INTEGER NOT NULL DEFAULT 0,
 		dirty        INTEGER NOT NULL DEFAULT 0
+	);
+
+	-- Local-only binary data. Bean photos do not participate in row sync.
+	CREATE TABLE IF NOT EXISTS bean_photos (
+		bean_id    TEXT PRIMARY KEY,
+		mime_type  TEXT NOT NULL,
+		image_data BLOB NOT NULL,
+		updated_at INTEGER NOT NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS grinders (

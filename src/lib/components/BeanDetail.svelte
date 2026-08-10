@@ -21,6 +21,9 @@
 
 <div class="bean-detail">
 	<div class="hero">
+		{#if bean.photoUrl}
+			<img class="bean-photo" src={bean.photoUrl} alt={`${bean.name} coffee bag`} />
+		{/if}
 		<div class="hero-sub">{bean.roaster}</div>
 		<h1 class="hero-title">{bean.name}</h1>
 		<div class="tasting-row">
@@ -101,6 +104,14 @@
 <style>
 	.hero {
 		padding: 20px 24px 8px;
+	}
+	.bean-photo {
+		width: 100%;
+		max-height: 320px;
+		object-fit: cover;
+		border-radius: var(--r-lg);
+		margin-bottom: 18px;
+		background: var(--card-2);
 	}
 	.hero-sub {
 		font-size: 11px;

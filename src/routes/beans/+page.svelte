@@ -78,7 +78,7 @@
 					href="/beans/{bean.id}"
 					onclick={(e) => onBeanCardClick(e, bean.id)}
 				>
-					<BeanBag roast={bean.roast} roaster={bean.roaster} />
+					<BeanBag roast={bean.roast} roaster={bean.roaster} photoUrl={bean.photoUrl} />
 					<div class="bean-info">
 						<div>
 							<div class="bean-name">{bean.name}</div>

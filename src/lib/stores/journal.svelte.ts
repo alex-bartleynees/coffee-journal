@@ -5,6 +5,8 @@ import {
 	getAllBeans,
 	getAllBrews,
 	getAllGrinders,
+	upsertBeanPhoto,
+	deleteBeanPhoto,
 	insertBean,
 	insertBrew,
 	insertGrinder,
@@ -105,7 +107,9 @@ function updateBean(updated: Bean): void {
 		return;
 	}
 	beans = beans
-		.map((bean) => (bean.id === updated.id ? { ...updated, brews: existing.brews } : bean))
+		.map((bean) => (bean.id === updated.id
+			? { ...updated, brews: existing.brews, photoUrl: updated.photoUrl ?? existing.photoUrl }
+			: bean))
 		.sort((a, b) => b.dateOpened.localeCompare(a.dateOpened));
 	insertBean({ ...updated, brews: existing.brews }).catch(console.error);
 	sync.schedule();
@@ -139,7 +143,22 @@ function deleteBrew(id: string): void {
 function deleteBean(id: string): void {
 	beans = beans.filter((b) => b.id !== id);
 	softDeleteBean(id).catch(console.error);
+	deleteBeanPhoto(id).catch(console.error);
 	sync.schedule();
+}
+
+async function saveBeanPhoto(beanId: string, image: Blob): Promise<void> {
+	const url = await upsertBeanPhoto(beanId, image);
+	beans = beans.map((bean) => bean.id === beanId ? { ...bean, photoUrl: url } : bean);
+}
+
+async function removeBeanPhoto(beanId: string): Promise<void> {
+	await deleteBeanPhoto(beanId);
+	beans = beans.map((bean) => {
+		if (bean.id !== beanId) return bean;
+		const { photoUrl: _, ...withoutPhoto } = bean;
+		return withoutPhoto;
+	});
 }
 
 function deleteGrinder(id: string): void {
@@ -165,5 +184,7 @@ export const journal = {
 	updateGrinder,
 	deleteBrew,
 	deleteBean,
+	saveBeanPhoto,
+	removeBeanPhoto,
 	deleteGrinder
 };

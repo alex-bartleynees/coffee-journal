@@ -1,5 +1,5 @@
 import SqliteWorker from './sqlite.worker?worker';
-import type { WorkerMsg, WorkerReply } from './sqlite.worker';
+import type { WorkerMsg, WorkerReply, SqlValue } from './sqlite.worker';
 
 type Resolve<T> = (value: T) => void;
 type Reject = (reason: unknown) => void;
@@ -64,13 +64,13 @@ function send(msg: WorkerMsg): Promise<Record<string, unknown>[] | null> {
 	});
 }
 
-export async function exec(sql: string, bind?: (string | number | null)[]): Promise<void> {
+export async function exec(sql: string, bind?: SqlValue[]): Promise<void> {
 	await send({ id: nextId++, type: 'exec', sql, bind });
 }
 
 export async function query<T extends Record<string, unknown>>(
 	sql: string,
-	bind?: (string | number | null)[]
+	bind?: SqlValue[]
 ): Promise<T[]> {
 	const rows = await send({ id: nextId++, type: 'query', sql, bind });
 	return (rows ?? []) as T[];
