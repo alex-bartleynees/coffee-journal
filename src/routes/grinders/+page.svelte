@@ -2,6 +2,7 @@
 	import TopBar from '$lib/components/TopBar.svelte';
 	import BurrIllustration from '$lib/components/BurrIllustration.svelte';
 	import GrinderDetail from '$lib/components/GrinderDetail.svelte';
+	import DetailActionMenu from '$lib/components/DetailActionMenu.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { METHOD_LABELS, beanById } from '$lib/data/sample';
@@ -114,6 +115,9 @@
 
 	{#if selectedGrinder}
 		<div class="grinders-detail-pane">
+			<div class="desktop-detail-actions">
+				<DetailActionMenu editHref={`/grinders/new?edit=${selectedGrinder.id}`} label="Grinder actions" />
+			</div>
 			<GrinderDetail grinder={selectedGrinder} myBrews={selectedGrinderBrews} beanById={beans} />
 		</div>
 	{/if}
@@ -279,6 +283,11 @@
 
 	.grinders-detail-pane {
 		display: none;
+	}
+	.desktop-detail-actions {
+		display: flex;
+		justify-content: flex-end;
+		padding: 32px 16px 0;
 	}
 
 	@media (min-width: 860px) {

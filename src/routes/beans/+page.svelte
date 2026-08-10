@@ -3,6 +3,7 @@
 	import BeanBag from '$lib/components/BeanBag.svelte';
 	import RoastDot from '$lib/components/RoastDot.svelte';
 	import BeanDetail from '$lib/components/BeanDetail.svelte';
+	import DetailActionMenu from '$lib/components/DetailActionMenu.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { search } from '$lib/stores/search.svelte';
@@ -105,6 +106,9 @@
 
 	{#if selectedBean}
 		<div class="beans-detail-pane">
+			<div class="desktop-detail-actions">
+				<DetailActionMenu editHref={`/beans/new?edit=${selectedBean.id}`} label="Bean actions" />
+			</div>
 			<BeanDetail bean={selectedBean} beanBrews={selectedBeanBrews} />
 		</div>
 	{/if}
@@ -207,6 +211,11 @@
 
 	.beans-detail-pane {
 		display: none;
+	}
+	.desktop-detail-actions {
+		display: flex;
+		justify-content: flex-end;
+		padding: 32px 16px 0;
 	}
 
 	@media (min-width: 860px) {

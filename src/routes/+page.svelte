@@ -3,6 +3,7 @@
   import Icon from "$lib/icons/Icon.svelte";
   import MethodIcon from "$lib/components/MethodIcon.svelte";
   import BrewDetail from "$lib/components/BrewDetail.svelte";
+  import DetailActionMenu from "$lib/components/DetailActionMenu.svelte";
   import { journal } from "$lib/stores/journal.svelte";
   import { search } from "$lib/stores/search.svelte";
   import { METHOD_LABELS, beanById } from "$lib/data/sample";
@@ -209,6 +210,9 @@
 
   {#if selectedBrew && selectedBean}
     <div class="journal-detail-pane">
+      <div class="desktop-detail-actions">
+        <DetailActionMenu editHref={`/new?edit=${selectedBrew.id}`} label="Brew actions" />
+      </div>
       <BrewDetail
         brew={selectedBrew}
         bean={selectedBean}
@@ -332,6 +336,11 @@
 
   .journal-detail-pane {
     display: none;
+  }
+  .desktop-detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 32px 16px 0;
   }
 
   @media (min-width: 860px) {
