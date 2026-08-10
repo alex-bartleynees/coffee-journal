@@ -6,6 +6,8 @@
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { search } from '$lib/stores/search.svelte';
+	import { todayIso, daysBetween } from '$lib/data/date';
+	import type { CalendarDate } from '$lib/data/date';
 
 	let filter = $state<'all' | 'active' | 'finished'>('all');
 
@@ -22,12 +24,8 @@
 		filter === 'all' ? beans : filter === 'active' ? beans.filter((b) => !b.finished) : beans.filter((b) => b.finished)
 	);
 
-	const referenceDate = $derived(
-		brews.reduce((max, b) => (b.date > max ? b.date : max), brews[0]?.date ?? new Date().toISOString().slice(0, 10))
-	);
-
-	function daysSince(d: string) {
-		return Math.round((new Date(referenceDate).getTime() - new Date(d).getTime()) / 86400000);
+	function daysSince(d: CalendarDate) {
+		return daysBetween(todayIso(), d);
 	}
 
 	// Desktop split-pane: grid stays on the left, detail rail renders on the
@@ -107,7 +105,7 @@
 
 	{#if selectedBean}
 		<div class="beans-detail-pane">
-			<BeanDetail bean={selectedBean} beanBrews={selectedBeanBrews} {referenceDate} />
+			<BeanDetail bean={selectedBean} beanBrews={selectedBeanBrews} />
 		</div>
 	{/if}
 </div>

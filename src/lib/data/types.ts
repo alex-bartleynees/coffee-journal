@@ -1,3 +1,5 @@
+import type { CalendarDate } from './date';
+
 export type Roast = 'light' | 'medium' | 'dark';
 export type Method = 'espresso' | 'v60' | 'aeropress';
 export type GrinderType = 'espresso' | 'pourover';
@@ -12,8 +14,8 @@ export interface Bean {
 	roast: Roast;
 	altitude: string;
 	tasting: string[];
-	dateOpened: string;
-	roastDate: string;
+	dateOpened: CalendarDate;
+	roastDate: CalendarDate;
 	pricePerKg: number;
 	bagWeight: number;
 	brews: number;
@@ -44,7 +46,7 @@ export interface Brew {
 	id: string;
 	beanId: string;
 	method: Method;
-	date: string;
+	date: CalendarDate;
 	time: string;
 	grinder: string;
 	grindSetting: number;

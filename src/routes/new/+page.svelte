@@ -6,6 +6,7 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import { createDraft, draftFromBrew, loadDraft, saveDraft, clearDraft } from '$lib/components/new-brew/DraftBrew';
 	import { newId } from '$lib/data/id';
+	import { todayIso } from '$lib/data/date';
 	import BeanStep from '$lib/components/new-brew/BeanStep.svelte';
 	import BrewStep from '$lib/components/new-brew/BrewStep.svelte';
 	import TasteStep from '$lib/components/new-brew/TasteStep.svelte';
@@ -64,14 +65,10 @@
 
 	function save() {
 		if (editId && !existingBrew) return;
-		const referenceDate = journal.brews.reduce(
-			(max, b) => (b.date > max ? b.date : max),
-			journal.brews[0]?.date ?? new Date().toISOString().slice(0, 10)
-		);
 		const brew: Brew = {
 			...draft,
 			id: existingBrew?.id ?? newId('br'),
-			date: existingBrew?.date ?? referenceDate,
+			date: existingBrew?.date ?? todayIso(),
 			time: existingBrew?.time ?? new Date().toTimeString().slice(0, 5),
 			ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',
 			recipeNotes: draft.recipeNotes.trim() || undefined,

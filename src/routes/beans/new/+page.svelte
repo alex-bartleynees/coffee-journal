@@ -6,6 +6,7 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import { TASTE_DESCRIPTORS } from '$lib/data/sample';
 	import { newId } from '$lib/data/id';
+	import { calendarDate, todayIso } from '$lib/data/date';
 	import type { Bean, Roast } from '$lib/data/types';
 	import { prepareBeanPhoto } from '$lib/images/bean-photo';
 
@@ -13,10 +14,7 @@
 	const existingBean = $derived(editId ? journal.beans.find((bean) => bean.id === editId) : undefined);
 	let initializedEditId: string | null = null;
 
-	const today = journal.brews.reduce(
-		(max, b) => (b.date > max ? b.date : max),
-		journal.brews[0]?.date ?? new Date().toISOString().slice(0, 10)
-	);
+	const today = todayIso();
 
 	let name = $state('');
 	let roaster = $state('');
@@ -32,8 +30,8 @@
 	let customTastingInput = $state<Record<string, string>>(
 		Object.fromEntries(Object.keys(TASTE_DESCRIPTORS).map((category) => [category, '']))
 	);
-	let dateOpened = $state(today);
-	let roastDate = $state(today);
+	let dateOpened = $state<string>(today);
+	let roastDate = $state<string>(today);
 	let pricePerKg = $state(60);
 	let bagWeight = $state(250);
 	let photoInput = $state<HTMLInputElement>();
@@ -149,8 +147,8 @@
 			roast,
 			altitude: altitude.trim() || '—',
 			tasting,
-			dateOpened,
-			roastDate,
+			dateOpened: calendarDate(dateOpened),
+			roastDate: calendarDate(roastDate),
 			pricePerKg,
 			bagWeight,
 			brews: existingBean?.brews ?? 0,

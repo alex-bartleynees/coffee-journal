@@ -1,4 +1,5 @@
 import { exec, query } from './index';
+import { calendarDate } from '$lib/data/date';
 import type { Bean, Brew, Grinder, Method } from '$lib/data/types';
 
 /**
@@ -57,7 +58,7 @@ export function beanFromRow(r: BeanRow): Bean {
 		id: r.id, name: r.name, roaster: r.roaster, origin: r.origin,
 		process: r.process, varietal: r.varietal, roast: r.roast as Bean['roast'],
 		altitude: r.altitude, tasting: JSON.parse(r.tasting) as string[],
-		dateOpened: r.date_opened, roastDate: r.roast_date,
+		dateOpened: calendarDate(r.date_opened), roastDate: calendarDate(r.roast_date),
 		pricePerKg: r.price_per_kg, bagWeight: r.bag_weight,
 		brews: r.brews ?? 0, finished: r.finished ? true : undefined
 	};
@@ -66,7 +67,7 @@ export function beanFromRow(r: BeanRow): Bean {
 export function brewFromRow(r: BrewRow): Brew {
 	const brew: Brew = {
 		id: r.id, beanId: r.bean_id, method: r.method as Brew['method'],
-		date: r.date, time: r.time, grinder: r.grinder,
+		date: calendarDate(r.date), time: r.time, grinder: r.grinder,
 		grindSetting: r.grind_setting, doseIn: r.dose_in, yieldOut: r.yield_out,
 		extractionTime: r.extraction_time, temperature: r.temperature,
 		ratio: r.ratio, rating: r.rating, rating2: r.rating2 ?? null

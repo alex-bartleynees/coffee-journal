@@ -1,9 +1,10 @@
 <script lang="ts">
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
+	import { todayIso, daysBetween } from '$lib/data/date';
+	import type { CalendarDate } from '$lib/data/date';
 	import type { Bean, Brew } from '$lib/data/types';
 
-	let { bean, beanBrews, referenceDate }: { bean: Bean; beanBrews: Brew[]; referenceDate: string } =
-		$props();
+	let { bean, beanBrews }: { bean: Bean; beanBrews: Brew[] } = $props();
 
 	const avg = $derived(
 		beanBrews.length ? (beanBrews.reduce((s, b) => s + b.rating, 0) / beanBrews.length).toFixed(1) : '—'
@@ -14,8 +15,8 @@
 	const pctUsed = $derived((totalGrams / bean.bagWeight) * 100);
 	const avgGramsPerBrew = $derived(beanBrews.length ? totalGrams / beanBrews.length : 0);
 
-	function daysAgo(d: string) {
-		return Math.round((new Date(referenceDate).getTime() - new Date(d).getTime()) / 86400000);
+	function daysAgo(d: CalendarDate) {
+		return daysBetween(todayIso(), d);
 	}
 </script>
 
