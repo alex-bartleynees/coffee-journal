@@ -120,8 +120,11 @@
 							href="/brew/{brew.id}"
 							onclick={(e) => onBrewCardClick(e, brew.id)}
 						>
-							<div class="swatch {bean.roast}">
-								<MethodIcon method={brew.method} size={26} stroke="rgba(255,255,255,0.85)" strokeWidth={1.4} />
+							<div class="swatch {bean.roast}" class:has-photo={bean.photoUrl}>
+								{#if bean.photoUrl}<img src={bean.photoUrl} alt="" />{/if}
+								<span class="method-badge">
+									<MethodIcon method={brew.method} size={22} stroke="white" strokeWidth={1.6} />
+								</span>
 							</div>
 							<div class="meta">
 								<div>
@@ -225,6 +228,30 @@
 	}
 	.brew-list {
 		padding-bottom: 20px;
+	}
+	:global(.brew-card .swatch.has-photo img) {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	:global(.brew-card .swatch.has-photo::after) {
+		background: linear-gradient(to bottom, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.3));
+	}
+	.method-badge {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.brew-card .swatch.has-photo) .method-badge {
+		width: 34px;
+		height: 34px;
+		border-radius: 50%;
+		background: rgba(22, 18, 14, 0.48);
+		box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
 	}
 	.date-label {
 		padding: 10px 24px 6px;
