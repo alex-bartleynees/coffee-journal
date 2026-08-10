@@ -13,50 +13,58 @@
 </script>
 
 <div class="step">
-	<div class="section-label" style="padding-top: 4px">
-		{draft.withMilk ? 'Straight espresso' : 'Overall rating'}
-	</div>
-	<RatingDial value={draft.rating} onChange={(v) => (draft.rating = v)} />
-
-	{#if draft.withMilk}
-		<div class="section-label">In milk (flat white)</div>
-		<RatingDial value={draft.rating2 ?? 7} onChange={(v) => (draft.rating2 = v)} accent />
-
-		<div class="milk-row">
-			<div>
-				<div class="milk-title">Cuts through milk</div>
-				<div class="milk-sub">Flavor stands up</div>
-			</div>
-			<button
-				class="toggle"
-				class:on={draft.cutsThruMilk}
-				onclick={() => (draft.cutsThruMilk = !draft.cutsThruMilk)}
-				aria-label="Cuts through milk"
-				aria-pressed={draft.cutsThruMilk}
-			>
-				<span class="toggle-thumb"></span>
-			</button>
+	<div class="col-left">
+		<div class="section-label" style="padding-top: 4px">
+			{draft.withMilk ? 'Straight espresso' : 'Overall rating'}
 		</div>
-	{/if}
+		<RatingDial value={draft.rating} onChange={(v) => (draft.rating = v)} />
 
-	<div class="section-label">Would buy again?</div>
-	<div class="option-row">
-		{#each buyOptions as o (o)}
-			<button class="chip" class:active={draft.buyAgain === o} onclick={() => (draft.buyAgain = o)}>{o}</button>
-		{/each}
+		{#if draft.withMilk}
+			<div class="section-label">In milk (flat white)</div>
+			<RatingDial value={draft.rating2 ?? 7} onChange={(v) => (draft.rating2 = v)} accent />
+
+			<div class="milk-row">
+				<div>
+					<div class="milk-title">Cuts through milk</div>
+					<div class="milk-sub">Flavor stands up</div>
+				</div>
+				<button
+					class="toggle"
+					class:on={draft.cutsThruMilk}
+					onclick={() => (draft.cutsThruMilk = !draft.cutsThruMilk)}
+					aria-label="Cuts through milk"
+					aria-pressed={draft.cutsThruMilk}
+				>
+					<span class="toggle-thumb"></span>
+				</button>
+			</div>
+		{/if}
 	</div>
 
-	<div class="section-label">Best for</div>
-	<div class="option-row">
-		{#each bestForOptions as o (o)}
-			<button class="chip" class:active={draft.bestFor === o} onclick={() => (draft.bestFor = o)}>{o}</button>
-		{/each}
+	<div class="col-right">
+		<div class="section-label">Would buy again?</div>
+		<div class="option-row">
+			{#each buyOptions as o (o)}
+				<button class="chip" class:active={draft.buyAgain === o} onclick={() => (draft.buyAgain = o)}>{o}</button>
+			{/each}
+		</div>
+
+		<div class="section-label">Best for</div>
+		<div class="option-row">
+			{#each bestForOptions as o (o)}
+				<button class="chip" class:active={draft.bestFor === o} onclick={() => (draft.bestFor = o)}>{o}</button>
+			{/each}
+		</div>
 	</div>
 </div>
 
 <style>
 	.step {
 		padding: 8px 16px;
+	}
+	.col-left,
+	.col-right {
+		display: contents;
 	}
 	.milk-row {
 		margin-top: 12px;
@@ -112,5 +120,18 @@
 		justify-content: center;
 		padding: 10px;
 		font-size: 13px;
+	}
+
+	@media (min-width: 860px) {
+		.step {
+			padding: 0;
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 32px;
+		}
+		.col-left,
+		.col-right {
+			display: block;
+		}
 	}
 </style>

@@ -23,34 +23,42 @@
 </script>
 
 <div class="step">
-	<div class="section-label" style="padding-top: 4px">Tasting notes</div>
-	{#each Object.entries(TASTE_DESCRIPTORS) as [cat, items] (cat)}
-		<div class="cat-block">
-			<div class="cat-label">{cat}</div>
-			<div class="chip-group">
-				{#each items as item (item)}
-					<button class="chip" class:active={draft.descriptors.includes(item)} onclick={() => toggleDesc(item)}>
-						{item}
-					</button>
-				{/each}
-			</div>
-		</div>
-	{/each}
-
-	<div class="section-label">Notes</div>
-	<div class="notes">
-		{#each noteFields as f (f.key)}
-			<div class="field">
-				<div class="field-label">{f.label}</div>
-				<textarea class="field-input" rows="2" placeholder={f.placeholder} bind:value={draft[f.key]}></textarea>
+	<div class="col-left">
+		<div class="section-label" style="padding-top: 4px">Tasting notes</div>
+		{#each Object.entries(TASTE_DESCRIPTORS) as [cat, items] (cat)}
+			<div class="cat-block">
+				<div class="cat-label">{cat}</div>
+				<div class="chip-group">
+					{#each items as item (item)}
+						<button class="chip" class:active={draft.descriptors.includes(item)} onclick={() => toggleDesc(item)}>
+							{item}
+						</button>
+					{/each}
+				</div>
 			</div>
 		{/each}
+	</div>
+
+	<div class="col-right">
+		<div class="section-label">Notes</div>
+		<div class="notes">
+			{#each noteFields as f (f.key)}
+				<div class="field">
+					<div class="field-label">{f.label}</div>
+					<textarea class="field-input" rows="2" placeholder={f.placeholder} bind:value={draft[f.key]}></textarea>
+				</div>
+			{/each}
+		</div>
 	</div>
 </div>
 
 <style>
 	.step {
 		padding: 8px 16px;
+	}
+	.col-left,
+	.col-right {
+		display: contents;
 	}
 	.cat-block {
 		margin-bottom: 14px;
@@ -67,5 +75,18 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+	}
+
+	@media (min-width: 860px) {
+		.step {
+			padding: 0;
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 32px;
+		}
+		.col-left,
+		.col-right {
+			display: block;
+		}
 	}
 </style>
