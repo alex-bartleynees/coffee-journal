@@ -129,7 +129,7 @@
 		display: none;
 	}
 	.mobile-sync-status {
-		padding: 7px 16px;
+		padding: 7px 16px 18px;
 		border-top: 1px solid var(--line-soft);
 		background: var(--paper);
 		text-align: center;
