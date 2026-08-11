@@ -12,13 +12,13 @@
 {:else if sync.subscriptionRequired}
 	<a class="sync-status" href="/pricing">Sync off — enable Bloom Sync</a>
 {:else if sync.status === 'error'}
-	<div class="sync-status">Sync unavailable</div>
+	<a class="sync-status" href="/account">Sync unavailable</a>
 {:else if sync.status === 'syncing'}
-	<div class="sync-status">Syncing…</div>
+	<a class="sync-status" href="/account">Syncing…</a>
 {:else if sync.lastSyncAt !== null}
-	<div class="sync-status synced">Synced{showEmail && auth.email ? ` · ${auth.email}` : ''}</div>
+	<a class="sync-status synced" href="/account">Synced{showEmail && auth.email ? ` · ${auth.email}` : ''}</a>
 {:else}
-	<div class="sync-status">Checking sync…</div>
+	<a class="sync-status" href="/account">Checking sync…</a>
 {/if}
 
 <style>

@@ -29,6 +29,10 @@ export type SubscriptionState = {
 	paymentMethodLast4?: string | null;
 };
 
+export type SubscriptionResult =
+	| { ok: true; subscription: SubscriptionState }
+	| { ok: false; subscription: typeof NO_SUBSCRIPTION };
+
 export const NO_SUBSCRIPTION: SubscriptionState = {
 	status: 'none',
 	priceId: null,
@@ -58,6 +62,42 @@ export function needsPaymentAttention(status: SubscriptionStatus): boolean {
 	return status === 'past_due' || status === 'incomplete';
 }
 
+const STATUS_LABELS: Record<SubscriptionStatus, string> = {
+	none: 'No membership',
+	trialing: 'Free trial',
+	active: 'Active',
+	past_due: 'Payment past due',
+	canceled: 'Canceled',
+	incomplete: 'Incomplete',
+	incomplete_expired: 'Expired',
+	unpaid: 'Unpaid',
+	paused: 'Paused'
+};
+
+export function subscriptionStatusLabel(status: SubscriptionStatus): string {
+	return STATUS_LABELS[status];
+}
+
+export function formatSubscriptionDate(
+	value: string | null | undefined,
+	locale?: string
+): string {
+	if (!value) return '—';
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return '—';
+	return date.toLocaleDateString(locale, {
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric'
+	});
+}
+
+export function paymentMethodLabel(subscription: SubscriptionState): string {
+	return subscription.paymentMethodLast4
+		? `${subscription.paymentMethodBrand ?? 'Card'} ···· ${subscription.paymentMethodLast4}`
+		: 'None on file';
+}
+
 function parseState(data: unknown): SubscriptionState {
 	const raw = data as Partial<SubscriptionState> | null;
 	const status =
@@ -79,14 +119,18 @@ function parseState(data: unknown): SubscriptionState {
  * `none`, and any backend/network failure fails closed to `none` so callers
  * route to pricing rather than crash.
  */
-export async function getSubscription(): Promise<SubscriptionState> {
+export async function getSubscriptionResult(): Promise<SubscriptionResult> {
 	try {
 		const res = await fetch('/api/billing/subscription', { credentials: 'include' });
-		if (res.ok) return parseState(await res.json());
+		if (res.ok) return { ok: true, subscription: parseState(await res.json()) };
 	} catch {
-		return NO_SUBSCRIPTION;
+		return { ok: false, subscription: NO_SUBSCRIPTION };
 	}
-	return NO_SUBSCRIPTION;
+	return { ok: false, subscription: NO_SUBSCRIPTION };
+}
+
+export async function getSubscription(): Promise<SubscriptionState> {
+	return (await getSubscriptionResult()).subscription;
 }
 
 async function billingPost(path: string): Promise<Response> {
