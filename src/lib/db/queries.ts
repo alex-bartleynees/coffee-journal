@@ -38,11 +38,12 @@ export type GrinderRow = {
 };
 
 export type PresetRow = { grinder_id: string; method: string; setting: number };
-type BeanPhotoRow = { bean_id: string; mime_type: string; image_data: Uint8Array; updated_at: number };
+export type BeanPhotoRow = { bean_id: string; mime_type: string; image_data: Uint8Array | null; updated_at: number; deleted: number; dirty: number };
 
 const photoUrls = new Map<string, { updatedAt: number; url: string }>();
 
 function photoUrl(row: BeanPhotoRow): string {
+	if (!row.image_data) throw new Error('Cannot create an object URL for a deleted photo');
 	const existing = photoUrls.get(row.bean_id);
 	if (existing?.updatedAt === row.updated_at) return existing.url;
 	if (existing) URL.revokeObjectURL(existing.url);
@@ -107,7 +108,7 @@ export async function getAllBeans(): Promise<Bean[]> {
 		GROUP BY b.id
 		ORDER BY b.date_opened DESC
 	`);
-	const photos = await query<BeanPhotoRow>('SELECT bean_id, mime_type, image_data, updated_at FROM bean_photos');
+	const photos = await query<BeanPhotoRow>('SELECT * FROM bean_photos WHERE deleted = 0 AND image_data IS NOT NULL');
 	const photosByBean = new Map(photos.map((photo) => [photo.bean_id, photoUrl(photo)]));
 	return rows.map((row) => {
 		const bean = beanFromRow(row);
@@ -120,19 +121,62 @@ export async function upsertBeanPhoto(beanId: string, image: Blob): Promise<stri
 	const bytes = new Uint8Array(await image.arrayBuffer());
 	const updatedAt = Date.now();
 	await exec(
-		`INSERT INTO bean_photos (bean_id, mime_type, image_data, updated_at) VALUES (?, ?, ?, ?)
+		`INSERT INTO bean_photos (bean_id, mime_type, image_data, updated_at, deleted, dirty) VALUES (?, ?, ?, ?, 0, 1)
 		 ON CONFLICT(bean_id) DO UPDATE SET mime_type = excluded.mime_type,
-		 image_data = excluded.image_data, updated_at = excluded.updated_at`,
+		 image_data = excluded.image_data, updated_at = excluded.updated_at, deleted = 0, dirty = 1`,
 		[beanId, image.type, bytes, updatedAt]
 	);
-	return photoUrl({ bean_id: beanId, mime_type: image.type, image_data: bytes, updated_at: updatedAt });
+	return photoUrl({ bean_id: beanId, mime_type: image.type, image_data: bytes, updated_at: updatedAt, deleted: 0, dirty: 1 });
 }
 
 export async function deleteBeanPhoto(beanId: string): Promise<void> {
-	await exec('DELETE FROM bean_photos WHERE bean_id = ?', [beanId]);
+	const now = Date.now();
+	await exec(
+		`INSERT INTO bean_photos (bean_id, mime_type, image_data, updated_at, deleted, dirty)
+		 VALUES (?, '', NULL, ?, 1, 1)
+		 ON CONFLICT(bean_id) DO UPDATE SET mime_type = '', image_data = NULL,
+		 updated_at = excluded.updated_at, deleted = 1, dirty = 1`,
+		[beanId, now]
+	);
 	const existing = photoUrls.get(beanId);
 	if (existing) URL.revokeObjectURL(existing.url);
 	photoUrls.delete(beanId);
+}
+
+export async function getDirtyBeanPhotos(): Promise<BeanPhotoRow[]> {
+	return query<BeanPhotoRow>('SELECT * FROM bean_photos WHERE dirty = 1 ORDER BY updated_at');
+}
+
+export async function getBeanPhotoSyncRows(): Promise<BeanPhotoRow[]> {
+	return query<BeanPhotoRow>('SELECT * FROM bean_photos');
+}
+
+export async function clearBeanPhotoDirty(beanId: string, updatedAt: number): Promise<void> {
+	await exec('UPDATE bean_photos SET dirty = 0 WHERE bean_id = ? AND updated_at = ?', [beanId, updatedAt]);
+}
+
+export async function applyRemoteBeanPhoto(
+	beanId: string,
+	updatedAt: number,
+	deleted: boolean,
+	mimeType: string | null,
+	image: Uint8Array | null
+): Promise<boolean> {
+	const rows = await query<Pick<BeanPhotoRow, 'updated_at' | 'dirty'>>('SELECT updated_at, dirty FROM bean_photos WHERE bean_id = ?', [beanId]);
+	const local = rows[0];
+	if (local && (local.updated_at > updatedAt || (local.updated_at === updatedAt && !local.dirty))) return false;
+	await exec(
+		`INSERT INTO bean_photos (bean_id, mime_type, image_data, updated_at, deleted, dirty)
+		 VALUES (?, ?, ?, ?, ?, 0)
+		 ON CONFLICT(bean_id) DO UPDATE SET mime_type = excluded.mime_type,
+		 image_data = excluded.image_data, updated_at = excluded.updated_at,
+		 deleted = excluded.deleted, dirty = 0`,
+		[beanId, mimeType ?? '', image, updatedAt, deleted ? 1 : 0]
+	);
+	const existing = photoUrls.get(beanId);
+	if (existing) URL.revokeObjectURL(existing.url);
+	photoUrls.delete(beanId);
+	return true;
 }
 
 export async function getAllBrews(): Promise<Brew[]> {

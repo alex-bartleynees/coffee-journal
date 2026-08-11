@@ -11,6 +11,7 @@ import {
 	setSyncCursor
 } from '$lib/db/sync-queries';
 import { SyncResponse, type SyncRecord } from './protocol';
+import { syncPhotos } from './photo-sync';
 
 /**
  * The client sync engine (Sync-Protocol design): one serialised delta cycle —
@@ -31,6 +32,9 @@ import { SyncResponse, type SyncRecord } from './protocol';
 const SYNC_ENDPOINT = BFF_MODE
 	? '/api/sync'
 	: `${(import.meta.env.VITE_SYNC_URL as string | undefined) ?? 'http://localhost:3001'}/sync`;
+const PHOTO_ENDPOINT = BFF_MODE
+	? '/api/photos'
+	: `${(import.meta.env.VITE_SYNC_URL as string | undefined) ?? 'http://localhost:3001'}/api/photos`;
 const DEBOUNCE_MS = 2_000;
 const INTERVAL_MS = 120_000;
 
@@ -119,6 +123,11 @@ const syncCycle = Effect.gen(function* () {
 	}
 
 	yield* Effect.promise(() => setSyncCursor(response.cursor));
+	appliedLocally += yield* Effect.promise(() => syncPhotos({
+		endpoint: PHOTO_ENDPOINT,
+		headers: authHeaders,
+		...(BFF_MODE ? { credentials: 'include' as const } : {})
+	}));
 	return { appliedLocally };
 });
 

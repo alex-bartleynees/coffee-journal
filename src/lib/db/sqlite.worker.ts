@@ -3,6 +3,7 @@ import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import wasmUrl from '@sqlite.org/sqlite-wasm/sqlite3.wasm?url';
 import {
 	BREW_MIGRATION_COLUMNS,
+	PHOTO_SYNC_COLUMNS,
 	SCHEMA_SQL,
 	SCHEMA_VERSION,
 	SYNC_COLUMNS,
@@ -58,6 +59,22 @@ function migrate(database: Db): void {
 		if (!brewColumns.has(col)) {
 			database.exec({ sql: `ALTER TABLE brews ADD COLUMN ${col} ${def}` });
 		}
+	}
+	const photoColumns = columnNames(database, 'bean_photos');
+	if (PHOTO_SYNC_COLUMNS.some(([col]) => !photoColumns.has(col))) {
+		// Rebuild rather than ALTER: Phase 1 declared image_data NOT NULL, while
+		// Phase 2 deletion tombstones deliberately store no binary payload.
+		database.exec({ sql: `
+			CREATE TABLE bean_photos_v4 (
+				bean_id TEXT PRIMARY KEY, mime_type TEXT NOT NULL, image_data BLOB,
+				updated_at INTEGER NOT NULL, deleted INTEGER NOT NULL DEFAULT 0,
+				dirty INTEGER NOT NULL DEFAULT 0
+			);
+			INSERT INTO bean_photos_v4 (bean_id, mime_type, image_data, updated_at, deleted, dirty)
+				SELECT bean_id, mime_type, image_data, updated_at, 0, 1 FROM bean_photos;
+			DROP TABLE bean_photos;
+			ALTER TABLE bean_photos_v4 RENAME TO bean_photos;
+		` });
 	}
 	database.exec({
 		sql: `INSERT INTO _meta (key, value) VALUES ('schema_version', ?)
