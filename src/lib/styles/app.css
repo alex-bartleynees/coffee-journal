@@ -98,7 +98,7 @@
 html,
 body {
   height: 100vh;
-  height: 100dvh;
+  height: 100svh;
   margin: 0;
 }
 
@@ -135,7 +135,7 @@ a {
 /* App canvas */
 .app {
   height: 100vh;
-  height: 100dvh;
+  height: 100svh;
   background: var(--paper);
   display: flex;
   flex-direction: column;
