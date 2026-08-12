@@ -2,9 +2,11 @@
  * Local schema version. Bumped whenever the shape changes; `migrate()` in the
  * worker brings pre-existing OPFS databases up to this version. v1 added the
  * sync-metadata columns (`updated_at` / `deleted` / `dirty`) to the three
- * syncable tables; v2 added brew recipe notes — see [[Sync-Protocol]].
+ * syncable tables; v2 added brew recipe notes; v5 added the `machines` and
+ * `methods` tables and `brews.machine`; v6 added `methods.notes` — see
+ * [[Sync-Protocol]].
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 6;
 
 /**
  * Sync-metadata columns present on every syncable table (beans/grinders/brews):
@@ -20,12 +22,15 @@ export const SYNC_COLUMNS: readonly [string, string][] = [
 ];
 
 /** Tables that participate in sync (grinder_presets travel inside their grinder). */
-export const SYNCABLE_TABLES = ['beans', 'grinders', 'brews'] as const;
+export const SYNCABLE_TABLES = ['beans', 'grinders', 'brews', 'machines', 'methods'] as const;
 
 /** Brew columns added after the initial schema, used to upgrade existing DBs. */
 export const BREW_MIGRATION_COLUMNS: readonly [string, string][] = [
-	['recipe_notes', 'TEXT']
+	['recipe_notes', 'TEXT'],
+	['machine', 'TEXT']
 ];
+
+export const METHOD_MIGRATION_COLUMNS: readonly [string, string][] = [['notes', 'TEXT']];
 
 export const PHOTO_SYNC_COLUMNS: readonly [string, string][] = [
 	['deleted', 'INTEGER NOT NULL DEFAULT 0'],
@@ -87,6 +92,28 @@ export const SCHEMA_SQL = `
 		setting    REAL NOT NULL
 	);
 
+	CREATE TABLE IF NOT EXISTS machines (
+		id         TEXT PRIMARY KEY,
+		name       TEXT NOT NULL,
+		maker      TEXT NOT NULL,
+		type       TEXT NOT NULL,
+		method     TEXT,
+		notes      TEXT,
+		updated_at INTEGER NOT NULL DEFAULT 0,
+		deleted    INTEGER NOT NULL DEFAULT 0,
+		dirty      INTEGER NOT NULL DEFAULT 0
+	);
+
+	CREATE TABLE IF NOT EXISTS methods (
+		id         TEXT PRIMARY KEY,
+		label      TEXT NOT NULL,
+		icon       TEXT NOT NULL,
+		notes      TEXT,
+		updated_at INTEGER NOT NULL DEFAULT 0,
+		deleted    INTEGER NOT NULL DEFAULT 0,
+		dirty      INTEGER NOT NULL DEFAULT 0
+	);
+
 	CREATE TABLE IF NOT EXISTS brews (
 		id              TEXT PRIMARY KEY,
 		bean_id         TEXT NOT NULL,
@@ -94,6 +121,7 @@ export const SCHEMA_SQL = `
 		date            TEXT NOT NULL,
 		time            TEXT NOT NULL,
 		grinder         TEXT NOT NULL,
+		machine         TEXT,
 		grind_setting   REAL NOT NULL,
 		dose_in         REAL NOT NULL,
 		yield_out       REAL NOT NULL,

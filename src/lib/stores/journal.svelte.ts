@@ -1,24 +1,33 @@
-import { SAMPLE_BEANS, SAMPLE_BREWS, SAMPLE_GRINDERS } from '$lib/data/sample';
-import type { Bean, Brew, Grinder } from '$lib/data/types';
+import { SAMPLE_BEANS, SAMPLE_BREWS, SAMPLE_GRINDERS, SAMPLE_MACHINES, SAMPLE_METHODS } from '$lib/data/sample';
+import type { Bean, Brew, Grinder, Machine, MethodDef } from '$lib/data/types';
 import { openDb, exec, query, isPersistent } from '$lib/db/index';
 import {
 	getAllBeans,
 	getAllBrews,
 	getAllGrinders,
+	getAllMachines,
+	getAllMethods,
 	upsertBeanPhoto,
 	deleteBeanPhoto,
 	insertBean,
 	insertBrew,
 	insertGrinder,
+	insertMachine,
+	insertMethod,
 	softDeleteBean,
 	softDeleteBrew,
-	softDeleteGrinder
+	softDeleteGrinder,
+	softDeleteMachine,
+	softDeleteMethod
 } from '$lib/db/queries';
 import { sync } from '$lib/sync/engine.svelte';
+import { ensureDefaultMethods } from '$lib/db/default-methods';
 
 let beans = $state<Bean[]>([]);
 let brews = $state<Brew[]>([]);
 let grinders = $state<Grinder[]>([]);
+let machines = $state<Machine[]>([]);
+let methods = $state<MethodDef[]>([]);
 let ready = $state(false);
 let persistent = $state(false);
 let error = $state<string | null>(null);
@@ -30,6 +39,7 @@ async function seedIfEmpty(): Promise<void> {
 	if (rows.length) return;
 	for (const bean of SAMPLE_BEANS) await insertBean(bean);
 	for (const grinder of SAMPLE_GRINDERS) await insertGrinder(grinder);
+	for (const machine of SAMPLE_MACHINES) await insertMachine(machine);
 	for (const brew of SAMPLE_BREWS) await insertBrew(brew);
 	await exec("INSERT INTO _meta (key, value) VALUES ('seeded', '1')");
 }
@@ -38,10 +48,30 @@ async function init(): Promise<void> {
 	try {
 		await openDb();
 		persistent = isPersistent();
+		await ensureDefaultMethods(
+			{
+				async markerExists(key) {
+					return (await query<{ value: string }>('SELECT value FROM _meta WHERE key = ?', [key])).length > 0;
+				},
+				async insertIfMissing(method) {
+					await exec(
+						`INSERT OR IGNORE INTO methods
+							(id, label, icon, notes, updated_at, deleted, dirty) VALUES (?,?,?,NULL,0,0,0)`,
+						[method.id, method.label, method.icon]
+					);
+				},
+				async setMarker(key) {
+					await exec('INSERT OR REPLACE INTO _meta (key, value) VALUES (?, ?)', [key, '1']);
+				}
+			},
+			SAMPLE_METHODS
+		);
 		await seedIfEmpty();
 		beans = await getAllBeans();
 		brews = await getAllBrews();
 		grinders = await getAllGrinders();
+		machines = await getAllMachines();
+		methods = await getAllMethods();
 	} catch (e) {
 		error = e instanceof Error ? e.message : String(e);
 		console.error('Database initialization failed', e);
@@ -55,6 +85,8 @@ async function reload(): Promise<void> {
 	beans = await getAllBeans();
 	brews = await getAllBrews();
 	grinders = await getAllGrinders();
+	machines = await getAllMachines();
+	methods = await getAllMethods();
 }
 
 function addBrew(brew: Brew): void {
@@ -127,6 +159,52 @@ function updateGrinder(updated: Grinder): void {
 	sync.schedule();
 }
 
+function addMachine(machine: Machine): void {
+	machines = [...machines, machine].sort((a, b) => a.name.localeCompare(b.name));
+	insertMachine(machine).catch(console.error);
+	sync.schedule();
+}
+
+function updateMachine(updated: Machine): void {
+	if (!machines.some((machine) => machine.id === updated.id)) {
+		console.error(`Cannot update missing machine ${updated.id}`);
+		return;
+	}
+	machines = machines
+		.map((machine) => (machine.id === updated.id ? updated : machine))
+		.sort((a, b) => a.name.localeCompare(b.name));
+	insertMachine(updated).catch(console.error);
+	sync.schedule();
+}
+
+function deleteMachine(id: string): void {
+	machines = machines.filter((m) => m.id !== id);
+	softDeleteMachine(id).catch(console.error);
+	sync.schedule();
+}
+
+function addMethod(method: MethodDef): void {
+	methods = [...methods, method];
+	insertMethod(method).catch(console.error);
+	sync.schedule();
+}
+
+function updateMethod(updated: MethodDef): void {
+	if (!methods.some((method) => method.id === updated.id)) {
+		console.error(`Cannot update missing method ${updated.id}`);
+		return;
+	}
+	methods = methods.map((method) => (method.id === updated.id ? updated : method));
+	insertMethod(updated).catch(console.error);
+	sync.schedule();
+}
+
+function deleteMethod(id: string): void {
+	methods = methods.filter((m) => m.id !== id);
+	softDeleteMethod(id).catch(console.error);
+	sync.schedule();
+}
+
 function deleteBrew(id: string): void {
 	const brew = brews.find((b) => b.id === id);
 	brews = brews.filter((b) => b.id !== id);
@@ -171,6 +249,8 @@ export const journal = {
 	get beans() { return beans; },
 	get brews() { return brews; },
 	get grinders() { return grinders; },
+	get machines() { return machines; },
+	get methods() { return methods; },
 	get ready() { return ready; },
 	get persistent() { return persistent; },
 	get error() { return error; },
@@ -179,12 +259,18 @@ export const journal = {
 	addBrew,
 	addBean,
 	addGrinder,
+	addMachine,
+	addMethod,
 	updateBrew,
 	updateBean,
 	updateGrinder,
+	updateMachine,
+	updateMethod,
 	deleteBrew,
 	deleteBean,
 	saveBeanPhoto,
 	removeBeanPhoto,
-	deleteGrinder
+	deleteGrinder,
+	deleteMachine,
+	deleteMethod
 };

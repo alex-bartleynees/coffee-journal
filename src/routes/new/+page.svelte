@@ -72,6 +72,7 @@
 			time: existingBrew?.time ?? new Date().toTimeString().slice(0, 5),
 			ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',
 			recipeNotes: draft.recipeNotes.trim() || undefined,
+			machine: draft.machine ?? undefined,
 			rating2: draft.withMilk ? draft.rating2 : null
 		};
 		if (existingBrew) journal.updateBrew(brew);
@@ -127,7 +128,13 @@
 
 	<div class="screen nb-content">
 		{#if tab === 0}
-			<BeanStep {draft} beans={journal.beans} includeBeanId={existingBrew?.beanId} />
+			<BeanStep
+				{draft}
+				beans={journal.beans}
+				methods={journal.methods}
+				machines={journal.machines}
+				includeBeanId={existingBrew?.beanId}
+			/>
 		{:else if tab === 1}
 			<BrewStep {draft} grinders={journal.grinders} />
 		{:else if tab === 2}

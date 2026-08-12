@@ -10,6 +10,7 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { sync } from '$lib/sync/engine.svelte';
+	import { DEFAULT_EQUIPMENT_ROOT, equipmentRoot, storedEquipmentRoot } from '$lib/data/equipment-nav';
 
 	let { children } = $props();
 
@@ -46,8 +47,27 @@
 		{ href: '/stats', match: '/stats', icon: 'compare' as const, label: 'Stats' },
 		{ href: '/grinders', match: '/grinders', icon: 'coffee' as const, label: 'Grinders' }
 	];
+	// The mobile gear tab covers all three equipment routes — Grinders/Machines/Methods
+	// switch via the in-page EquipSwitch, not separate bottom-nav icons.
+	const gearRoutes = ['/grinders', '/machines', '/methods'];
+	const EQUIPMENT_STORAGE_KEY = 'bloom:last-equipment-view';
+	let gearHref = $state(DEFAULT_EQUIPMENT_ROOT);
 
-	const isTabRoot = $derived(tabs.some((t) => t.match === page.url.pathname));
+	onMount(() => {
+		gearHref = storedEquipmentRoot(localStorage.getItem(EQUIPMENT_STORAGE_KEY));
+	});
+
+	$effect(() => {
+		const root = equipmentRoot(page.url.pathname);
+		if (!root) return;
+		gearHref = root;
+		localStorage.setItem(EQUIPMENT_STORAGE_KEY, root);
+	});
+
+	const isTabRoot = $derived(
+		tabs.some((t) => t.match === page.url.pathname) || gearRoutes.includes(page.url.pathname)
+	);
+	const isGearActive = $derived(gearRoutes.includes(page.url.pathname));
 </script>
 
 <svelte:head>
@@ -92,9 +112,9 @@
 					<span class="nav-icon"><Icon name="compare" size={20} /></span>
 					<span>Stats</span>
 				</a>
-				<a class="nav-btn" class:active={page.url.pathname === '/grinders'} href="/grinders">
+					<a class="nav-btn" class:active={isGearActive} href={gearHref}>
 					<span class="nav-icon"><Icon name="coffee" size={20} /></span>
-					<span>Grinders</span>
+						<span>Gear</span>
 				</a>
 			</nav>
 		{/if}

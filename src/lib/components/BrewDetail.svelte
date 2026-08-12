@@ -1,8 +1,10 @@
 <script lang="ts">
   import Icon from "$lib/icons/Icon.svelte";
   import StarRow from "$lib/components/StarRow.svelte";
-  import type { Bean, Brew, Grinder } from "$lib/data/types";
-  import { METHOD_LABELS, formatExtractionTime } from "$lib/data/sample";
+  import type { Bean, Brew, Grinder, Machine } from "$lib/data/types";
+  import { formatExtractionTime } from "$lib/data/sample";
+  import { methodLabel } from "$lib/data/methods";
+  import { journal } from "$lib/stores/journal.svelte";
   import { parseIsoDate } from "$lib/data/date";
   import type { CalendarDate } from "$lib/data/date";
 
@@ -10,12 +12,14 @@
     brew,
     bean,
     grinder,
+    machine,
     prevBrew,
     prevBean,
   }: {
     brew: Brew;
     bean: Bean;
     grinder: Grinder | undefined;
+    machine?: Machine;
     prevBrew?: Brew;
     prevBean?: Bean;
   } = $props();
@@ -32,9 +36,7 @@
 <div class="brew-detail">
   <div class="hero">
     <div class="hero-sub">
-      {dateStr(brew.date)} · {brew.time} · {METHOD_LABELS[
-        brew.method
-      ]}{brew.withMilk ? " + milk" : ""}
+      {dateStr(brew.date)} · {brew.time} · {methodLabel(journal.methods, brew.method)}{brew.withMilk ? " + milk" : ""}
     </div>
     <h1 class="hero-title">{bean.name}</h1>
     <div class="hero-meta">
@@ -103,6 +105,13 @@
       </div>
     </div>
   </div>
+
+  {#if machine}
+    <div class="machine-strip">
+      <Icon name="machine" size={14} />
+      <span>{machine.name}</span>
+    </div>
+  {/if}
 
   {#if brew.recipeNotes}
     <div class="recipe-notes">{brew.recipeNotes}</div>
@@ -250,6 +259,18 @@
     font-size: 11px;
     color: var(--ink-3);
     font-weight: 400;
+  }
+  .machine-strip {
+    margin: 10px 16px 0;
+    padding: 10px 14px;
+    background: var(--card-2);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-sm);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-2);
   }
   .recipe-notes {
     margin: 10px 16px 0;

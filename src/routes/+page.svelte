@@ -6,7 +6,8 @@
   import DetailActionMenu from "$lib/components/DetailActionMenu.svelte";
   import { journal } from "$lib/stores/journal.svelte";
   import { search } from "$lib/stores/search.svelte";
-  import { METHOD_LABELS, beanById } from "$lib/data/sample";
+  import { beanById } from "$lib/data/sample";
+  import { methodLabel } from "$lib/data/methods";
   import {
     calendarDate,
     todayIso,
@@ -46,6 +47,11 @@
   const selectedGrinder = $derived(
     selectedBrew
       ? journal.grinders.find((g) => g.id === selectedBrew.grinder)
+      : undefined,
+  );
+  const selectedMachine = $derived(
+    selectedBrew?.machine
+      ? journal.machines.find((m) => m.id === selectedBrew.machine)
       : undefined,
   );
   const selectedPrevBrew = $derived.by(() => {
@@ -130,7 +136,7 @@
       <div class="stat-item">
         <div class="stat-label">Top</div>
         <div class="stat-value small">
-          {METHOD_LABELS[favMethod as keyof typeof METHOD_LABELS]}
+          {methodLabel(journal.methods, favMethod)}
         </div>
       </div>
     </div>
@@ -178,7 +184,7 @@
                     </div>
                   </div>
                   <div class="roaster">
-                    {bean.roaster} · {METHOD_LABELS[brew.method]}
+                    {bean.roaster} · {methodLabel(journal.methods, brew.method)}
                   </div>
                 </div>
                 <div class="stats">
@@ -217,6 +223,7 @@
         brew={selectedBrew}
         bean={selectedBean}
         grinder={selectedGrinder}
+        machine={selectedMachine}
         prevBrew={selectedPrevBrew}
         prevBean={selectedPrevBean}
       />

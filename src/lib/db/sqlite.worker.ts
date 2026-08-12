@@ -3,6 +3,7 @@ import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import wasmUrl from '@sqlite.org/sqlite-wasm/sqlite3.wasm?url';
 import {
 	BREW_MIGRATION_COLUMNS,
+	METHOD_MIGRATION_COLUMNS,
 	PHOTO_SYNC_COLUMNS,
 	SCHEMA_SQL,
 	SCHEMA_VERSION,
@@ -58,6 +59,12 @@ function migrate(database: Db): void {
 	for (const [col, def] of BREW_MIGRATION_COLUMNS) {
 		if (!brewColumns.has(col)) {
 			database.exec({ sql: `ALTER TABLE brews ADD COLUMN ${col} ${def}` });
+		}
+	}
+	const methodColumns = columnNames(database, 'methods');
+	for (const [col, def] of METHOD_MIGRATION_COLUMNS) {
+		if (!methodColumns.has(col)) {
+			database.exec({ sql: `ALTER TABLE methods ADD COLUMN ${col} ${def}` });
 		}
 	}
 	const photoColumns = columnNames(database, 'bean_photos');

@@ -1,6 +1,7 @@
 import { exec, query } from './index';
 import { calendarDate } from '$lib/data/date';
-import type { Bean, Brew, Grinder, Method } from '$lib/data/types';
+import type { Bean, Brew, Grinder, Machine, Method, MethodDef } from '$lib/data/types';
+import type { IconName } from '$lib/icons/Icon.svelte';
 
 /**
  * Sync bookkeeping stamped onto every row write. Local (user-originated) writes
@@ -23,7 +24,7 @@ export type BeanRow = {
 
 export type BrewRow = {
 	id: string; bean_id: string; method: string; date: string; time: string;
-	grinder: string; grind_setting: number; dose_in: number; yield_out: number;
+	grinder: string; machine: string | null; grind_setting: number; dose_in: number; yield_out: number;
 	extraction_time: number; temperature: number; ratio: string; rating: number;
 	rating2: number | null; aroma: string | null; flavor: string | null;
 	body: string | null; finish: string | null; descriptors: string | null;
@@ -38,6 +39,10 @@ export type GrinderRow = {
 };
 
 export type PresetRow = { grinder_id: string; method: string; setting: number };
+export type MachineRow = {
+	id: string; name: string; maker: string; type: string; method: string | null; notes: string | null;
+};
+export type MethodRow = { id: string; label: string; icon: string; notes: string | null };
 export type BeanPhotoRow = { bean_id: string; mime_type: string; image_data: Uint8Array | null; updated_at: number; deleted: number; dirty: number };
 
 const photoUrls = new Map<string, { updatedAt: number; url: string }>();
@@ -73,6 +78,7 @@ export function brewFromRow(r: BrewRow): Brew {
 		extractionTime: r.extraction_time, temperature: r.temperature,
 		ratio: r.ratio, rating: r.rating, rating2: r.rating2 ?? null
 	};
+	if (r.machine != null) brew.machine = r.machine;
 	if (r.aroma != null) brew.aroma = r.aroma;
 	if (r.flavor != null) brew.flavor = r.flavor;
 	if (r.body != null) brew.body = r.body;
@@ -97,6 +103,19 @@ export function grinderFromRow(r: GrinderRow, presets: PresetRow[] = []): Grinde
 	};
 	if (r.notes != null) g.notes = r.notes;
 	return g;
+}
+
+export function machineFromRow(r: MachineRow): Machine {
+	const m: Machine = { id: r.id, name: r.name, maker: r.maker, type: r.type };
+	if (r.method != null) m.method = r.method;
+	if (r.notes != null) m.notes = r.notes;
+	return m;
+}
+
+export function methodFromRow(r: MethodRow): MethodDef {
+	const method: MethodDef = { id: r.id, label: r.label, icon: r.icon as IconName };
+	if (r.notes != null) method.notes = r.notes;
+	return method;
 }
 
 export async function getAllBeans(): Promise<Bean[]> {
@@ -192,16 +211,26 @@ export async function getAllGrinders(): Promise<Grinder[]> {
 	return rows.map((r) => grinderFromRow(r, presets.filter((p) => p.grinder_id === r.id)));
 }
 
+export async function getAllMachines(): Promise<Machine[]> {
+	const rows = await query<MachineRow>('SELECT * FROM machines WHERE deleted = 0 ORDER BY name');
+	return rows.map(machineFromRow);
+}
+
+export async function getAllMethods(): Promise<MethodDef[]> {
+	const rows = await query<MethodRow>('SELECT * FROM methods WHERE deleted = 0 ORDER BY rowid');
+	return rows.map(methodFromRow);
+}
+
 export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()): Promise<void> {
 	await exec(
 		`INSERT OR REPLACE INTO brews
-			(id, bean_id, method, date, time, grinder, grind_setting, dose_in, yield_out,
+			(id, bean_id, method, date, time, grinder, machine, grind_setting, dose_in, yield_out,
 			 extraction_time, temperature, ratio, rating, rating2, aroma, flavor, body, finish,
 			 descriptors, with_milk, cuts_thru_milk, buy_again, best_for, recipe_notes,
 			 favorite, updated_at, deleted, dirty)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
-			brew.id, brew.beanId, brew.method, brew.date, brew.time, brew.grinder,
+			brew.id, brew.beanId, brew.method, brew.date, brew.time, brew.grinder, brew.machine ?? null,
 			brew.grindSetting, brew.doseIn, brew.yieldOut, brew.extractionTime,
 			brew.temperature, brew.ratio, brew.rating, brew.rating2 ?? null,
 			brew.aroma ?? null, brew.flavor ?? null, brew.body ?? null, brew.finish ?? null,
@@ -253,6 +282,28 @@ export async function insertGrinder(grinder: Grinder, meta: SyncMeta = localWrit
 	}
 }
 
+export async function insertMachine(machine: Machine, meta: SyncMeta = localWriteMeta()): Promise<void> {
+	await exec(
+		`INSERT OR REPLACE INTO machines
+			(id, name, maker, type, method, notes, updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,?,?,?)`,
+		[
+			machine.id, machine.name, machine.maker, machine.type, machine.method ?? null,
+			machine.notes ?? null,
+			meta.updatedAt, meta.deleted, meta.dirty
+		]
+	);
+}
+
+export async function insertMethod(method: MethodDef, meta: SyncMeta = localWriteMeta()): Promise<void> {
+	await exec(
+		`INSERT OR REPLACE INTO methods
+			(id, label, icon, notes, updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,?)`,
+		[method.id, method.label, method.icon, method.notes ?? null, meta.updatedAt, meta.deleted, meta.dirty]
+	);
+}
+
 /**
  * Soft-delete: sets the tombstone + marks dirty so the deletion syncs. The row
  * stays until the delete has propagated (a later compaction pass can hard-delete
@@ -269,4 +320,12 @@ export async function softDeleteBrew(id: string): Promise<void> {
 
 export async function softDeleteGrinder(id: string): Promise<void> {
 	await exec('UPDATE grinders SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
+}
+
+export async function softDeleteMachine(id: string): Promise<void> {
+	await exec('UPDATE machines SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
+}
+
+export async function softDeleteMethod(id: string): Promise<void> {
+	await exec('UPDATE methods SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
 }

@@ -3,15 +3,22 @@ import {
 	beanFromRow,
 	brewFromRow,
 	grinderFromRow,
+	machineFromRow,
+	methodFromRow,
 	insertBean,
 	insertBrew,
 	insertGrinder,
+	insertMachine,
+	insertMethod,
 	type BeanRow,
 	type BrewRow,
 	type GrinderRow,
+	type MachineRow,
+	type MethodRow,
 	type PresetRow
 } from './queries';
-import type { Bean, Brew, Grinder } from '$lib/data/types';
+import { SYNCABLE_TABLES } from './schema';
+import type { Bean, Brew, Grinder, Machine, MethodDef } from '$lib/data/types';
 import type { Entity, SyncRecord } from '$lib/sync/protocol';
 
 /**
@@ -20,7 +27,9 @@ import type { Entity, SyncRecord } from '$lib/sync/protocol';
  * is the LWW key, and the pull cursor lives in `_meta`.
  */
 
-const TABLE: Record<Entity, string> = { bean: 'beans', grinder: 'grinders', brew: 'brews' };
+const TABLE: Record<Entity, string> = {
+	bean: 'beans', grinder: 'grinders', brew: 'brews', machine: 'machines', method: 'methods'
+};
 
 type MetaRow = { value: string };
 type SyncFlagsRow = { updated_at: number; deleted: number; dirty: number };
@@ -52,6 +61,22 @@ export async function getDirtyRecords(): Promise<SyncRecord[]> {
 		records.push({
 			entity: 'brew', id: r.id, updatedAt: r.updated_at,
 			deleted: !!r.deleted, payload: brewFromRow(r)
+		});
+	}
+
+	const machines = await query<MachineRow & SyncFlagsRow>('SELECT * FROM machines WHERE dirty = 1');
+	for (const r of machines) {
+		records.push({
+			entity: 'machine', id: r.id, updatedAt: r.updated_at,
+			deleted: !!r.deleted, payload: machineFromRow(r)
+		});
+	}
+
+	const methods = await query<MethodRow & SyncFlagsRow>('SELECT * FROM methods WHERE dirty = 1');
+	for (const r of methods) {
+		records.push({
+			entity: 'method', id: r.id, updatedAt: r.updated_at,
+			deleted: !!r.deleted, payload: methodFromRow(r)
 		});
 	}
 
@@ -98,6 +123,8 @@ export async function applyRemoteRecord(rec: SyncRecord): Promise<boolean> {
 
 	if (rec.entity === 'bean') await insertBean(rec.payload as Bean, meta);
 	else if (rec.entity === 'grinder') await insertGrinder(rec.payload as Grinder, meta);
+	else if (rec.entity === 'machine') await insertMachine(rec.payload as Machine, meta);
+	else if (rec.entity === 'method') await insertMethod(rec.payload as MethodDef, meta);
 	else await insertBrew(rec.payload as Brew, meta);
 	return true;
 }
@@ -130,7 +157,7 @@ export async function isEnrolled(): Promise<boolean> {
  */
 export async function enrollForSync(): Promise<void> {
 	const now = Date.now();
-	for (const table of ['beans', 'grinders', 'brews']) {
+	for (const table of SYNCABLE_TABLES) {
 		await exec(
 			`UPDATE ${table} SET dirty = 1,
 				updated_at = CASE WHEN updated_at = 0 THEN ? ELSE updated_at END`,

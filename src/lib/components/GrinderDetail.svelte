@@ -1,7 +1,8 @@
 <script lang="ts">
 	import BurrIllustration from '$lib/components/BurrIllustration.svelte';
 	import type { Bean, Brew, Grinder } from '$lib/data/types';
-	import { METHOD_LABELS } from '$lib/data/sample';
+	import { methodLabel } from '$lib/data/methods';
+	import { journal } from '$lib/stores/journal.svelte';
 
 	let { grinder, myBrews, beanById: beans }: { grinder: Grinder; myBrews: Brew[]; beanById: Record<string, Bean> } =
 		$props();
@@ -48,7 +49,7 @@
 			{#each grinder.presets as p (p.method)}
 				{@const pct = (p.setting / grinder.range[1]) * 100}
 				<div class="preset-marker" style="left:{pct}%">
-					<div class="preset-marker-label">{METHOD_LABELS[p.method]}</div>
+					<div class="preset-marker-label">{methodLabel(journal.methods, p.method)}</div>
 					<div class="preset-marker-dot mono">{p.setting}</div>
 				</div>
 			{/each}
@@ -66,7 +67,7 @@
 				{@const avgSetting = agg.settings.reduce((a, b) => a + b, 0) / agg.settings.length}
 				{@const avgRating = agg.ratings.reduce((a, b) => a + b, 0) / agg.ratings.length}
 				<div class="method-row" class:last={i === Object.keys(byMethod).length - 1}>
-					<div class="method-name">{METHOD_LABELS[m as keyof typeof METHOD_LABELS]}</div>
+					<div class="method-name">{methodLabel(journal.methods, m)}</div>
 					<div>
 						<div class="method-sublabel">avg setting</div>
 						<div class="method-setting mono">{avgSetting.toFixed(1)}</div>
@@ -88,7 +89,7 @@
 				<div class="log-setting mono">{br.grindSetting}</div>
 				<div class="log-meta">
 					<div class="log-name">{bean?.name}</div>
-					<div class="log-sub">{METHOD_LABELS[br.method]} · {br.date}</div>
+					<div class="log-sub">{methodLabel(journal.methods, br.method)} · {br.date}</div>
 				</div>
 				<div class="log-rating">★ {br.rating}</div>
 			</a>

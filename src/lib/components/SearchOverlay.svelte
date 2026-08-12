@@ -4,7 +4,8 @@
 	import BeanBag from '$lib/components/BeanBag.svelte';
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import RoastDot from '$lib/components/RoastDot.svelte';
-	import { METHOD_LABELS, beanById } from '$lib/data/sample';
+	import { beanById } from '$lib/data/sample';
+	import { methodLabel } from '$lib/data/methods';
 	import { searchJournal } from '$lib/data/search';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
@@ -89,7 +90,7 @@
 									<span class="method-mark"><MethodIcon method={brew.method} size={22} /></span>
 									<span class="result-copy">
 										<span class="result-title">{bean?.name ?? 'Unknown bean'}</span>
-										<span class="result-meta">{bean?.roaster ?? 'Unknown roaster'} · {METHOD_LABELS[brew.method]} · {brew.rating}/10</span>
+										<span class="result-meta">{bean?.roaster ?? 'Unknown roaster'} · {methodLabel(journal.methods, brew.method)} · {brew.rating}/10</span>
 									</span>
 									<Icon name="chevron" size={14} />
 								</button>

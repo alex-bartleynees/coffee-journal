@@ -4,6 +4,7 @@ export interface DraftBrew {
 	beanId: string;
 	method: Method;
 	withMilk: boolean;
+	machine: string | null;
 	grinder: string;
 	grindSetting: number;
 	doseIn: number;
@@ -28,6 +29,7 @@ export function createDraft(beanId: string): DraftBrew {
 		beanId,
 		method: 'espresso',
 		withMilk: false,
+		machine: null,
 		grinder: 'g1',
 		grindSetting: 14,
 		doseIn: 18,
@@ -53,6 +55,7 @@ export function draftFromBrew(brew: Brew): DraftBrew {
 		beanId: brew.beanId,
 		method: brew.method,
 		withMilk: brew.withMilk ?? false,
+		machine: brew.machine ?? null,
 		grinder: brew.grinder,
 		grindSetting: brew.grindSetting,
 		doseIn: brew.doseIn,

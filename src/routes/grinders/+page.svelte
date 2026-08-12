@@ -1,11 +1,13 @@
 <script lang="ts">
 	import TopBar from '$lib/components/TopBar.svelte';
+	import EquipSwitch from '$lib/components/EquipSwitch.svelte';
 	import BurrIllustration from '$lib/components/BurrIllustration.svelte';
 	import GrinderDetail from '$lib/components/GrinderDetail.svelte';
 	import DetailActionMenu from '$lib/components/DetailActionMenu.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
-	import { METHOD_LABELS, beanById } from '$lib/data/sample';
+	import { beanById } from '$lib/data/sample';
+	import { methodLabel } from '$lib/data/methods';
 
 	const grinders = $derived(journal.grinders);
 	const brews = $derived(journal.brews);
@@ -42,6 +44,8 @@
 			{/snippet}
 		</TopBar>
 
+		<EquipSwitch />
+
 		<div class="stats-strip">
 			<div class="stat"><div class="stat-n">{grinders.length}</div><div class="stat-l">grinders</div></div>
 			<div class="divider"></div>
@@ -69,7 +73,7 @@
 						<div class="preset-row">
 							{#each g.presets as p (p.method)}
 								<div class="preset-chip">
-									<span class="preset-method">{METHOD_LABELS[p.method]}</span>
+									<span class="preset-method">{methodLabel(journal.methods, p.method)}</span>
 									<span class="preset-value">{p.setting}</span>
 								</div>
 							{/each}
@@ -104,7 +108,7 @@
 						</svg>
 						<div class="recent-meta">
 							<div class="recent-name">{g.name}</div>
-							<div class="recent-sub">{METHOD_LABELS[br.method]} · {bean?.name}</div>
+							<div class="recent-sub">{methodLabel(journal.methods, br.method)} · {bean?.name}</div>
 						</div>
 						<div class="recent-setting mono">{br.grindSetting}</div>
 					</div>

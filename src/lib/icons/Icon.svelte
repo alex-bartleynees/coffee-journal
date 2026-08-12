@@ -26,6 +26,7 @@
 		| 'reset'
 		| 'milk'
 		| 'coffee'
+		| 'machine'
 		| 'sun'
 		| 'moon';
 </script>
@@ -142,6 +143,11 @@
 			<path d="M5 8h12v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8z" />
 			<path d="M17 10h2a2 2 0 0 1 0 4h-2" />
 			<path d="M9 2c0 1 1 2 1 3s-1 2-1 3M13 2c0 1 1 2 1 3s-1 2-1 3" />
+		{:else if name === 'machine'}
+			<rect x="4" y="9" width="16" height="11" rx="1.5" />
+			<path d="M8 9V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v3" />
+			<path d="M9 13h2v3a1 1 0 0 1-1 1 1 1 0 0 1-1-1z" />
+			<circle cx="16" cy="6.5" r="0.8" fill={stroke} stroke="none" />
 		{:else if name === 'sun'}
 			<circle cx="12" cy="12" r="4" />
 			<path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />

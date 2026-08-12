@@ -1,8 +1,28 @@
 import type { CalendarDate } from './date';
+import type { IconName } from '$lib/icons/Icon.svelte';
 
 export type Roast = 'light' | 'medium' | 'dark';
-export type Method = 'espresso' | 'v60' | 'aeropress';
+/** References a MethodDef.id. Not a union — methods are user-extensible data, not a fixed set. */
+export type Method = string;
 export type GrinderType = 'espresso' | 'pourover';
+
+export interface MethodDef {
+	id: string;
+	label: string;
+	/** Falls back to the generic 'cup' icon for custom methods with no dedicated icon. */
+	icon: IconName;
+	notes?: string;
+}
+
+export interface Machine {
+	id: string;
+	name: string;
+	maker: string;
+	type: string;
+	/** Optional — a machine can be added before its method is decided, or reassigned later. */
+	method?: string;
+	notes?: string;
+}
 
 export interface Bean {
 	id: string;
@@ -49,6 +69,8 @@ export interface Brew {
 	date: CalendarDate;
 	time: string;
 	grinder: string;
+	/** Espresso machine / pourover device used, if any — references a Machine.id. */
+	machine?: string;
 	grindSetting: number;
 	doseIn: number;
 	yieldOut: number;

@@ -2,7 +2,7 @@
 	import TopBar from '$lib/components/TopBar.svelte';
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
-	import { METHOD_LABELS } from '$lib/data/sample';
+	import { methodLabel } from '$lib/data/methods';
 
 	const brews = $derived(journal.brews);
 	const beans = $derived(journal.beans);
@@ -74,7 +74,7 @@
 				{#each Object.entries(byMethod) as [m, c] (m)}
 					<div class="method-row">
 						<MethodIcon method={m as any} size={18} stroke="var(--ink-2)" />
-						<div class="method-label">{METHOD_LABELS[m as keyof typeof METHOD_LABELS]}</div>
+						<div class="method-label">{methodLabel(journal.methods, m)}</div>
 						<div class="method-bar-track">
 							<div class="method-bar-fill" style="width:{(c / total) * 100}%"></div>
 						</div>

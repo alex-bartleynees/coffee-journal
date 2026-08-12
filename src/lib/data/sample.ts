@@ -1,4 +1,4 @@
-import type { Bean, Brew, Grinder, Method } from './types';
+import type { Bean, Brew, Grinder, Machine, MethodDef } from './types';
 import { calendarDate } from './date';
 
 export const SAMPLE_BEANS: Bean[] = [
@@ -114,6 +114,47 @@ export const SAMPLE_GRINDERS: Grinder[] = [
 	}
 ];
 
+export const SAMPLE_METHODS: MethodDef[] = [
+	{ id: 'espresso', label: 'Espresso', icon: 'espresso' },
+	{ id: 'v60', label: 'V60', icon: 'v60' },
+	{ id: 'aeropress', label: 'AeroPress', icon: 'aeropress' }
+];
+
+export const SAMPLE_MACHINES: Machine[] = [
+	{
+		id: 'm1',
+		name: 'Lelit Bianca',
+		maker: 'Lelit',
+		type: 'dual-boiler',
+		method: 'espresso',
+		notes: 'Main workhorse, PID-controlled. Descaled Feb 2026, group gasket replaced Jan 2026.'
+	},
+	{
+		id: 'm2',
+		name: 'Flair 58',
+		maker: 'Flair',
+		type: 'manual',
+		method: 'espresso',
+		notes: 'Manual lever press for travel. No heating element — needs kettle prep water.'
+	},
+	{
+		id: 'm3',
+		name: 'V60 Ceramic',
+		maker: 'Hario',
+		type: 'pourover',
+		method: 'v60',
+		notes: 'Retains heat well, slower draw-down. Daily driver.'
+	},
+	{
+		id: 'm4',
+		name: 'V60 Plastic',
+		maker: 'Hario',
+		type: 'pourover',
+		method: 'v60',
+		notes: 'Lighter, faster draw-down than the ceramic. Travel pick.'
+	}
+];
+
 export const SAMPLE_BREWS: Brew[] = [
 	{
 		id: 'br1',
@@ -144,6 +185,7 @@ export const SAMPLE_BREWS: Brew[] = [
 		date: calendarDate('2026-04-27'),
 		time: '07:42',
 		grinder: 'g1',
+		machine: 'm1',
 		grindSetting: 14.5,
 		doseIn: 18,
 		yieldOut: 36,
@@ -167,6 +209,7 @@ export const SAMPLE_BREWS: Brew[] = [
 		date: calendarDate('2026-04-27'),
 		time: '20:10',
 		grinder: 'g1',
+		machine: 'm1',
 		grindSetting: 13.2,
 		doseIn: 18,
 		yieldOut: 38,
@@ -235,18 +278,16 @@ export const TASTE_DESCRIPTORS: Record<string, string[]> = {
 	Other: ['Tobacco', 'Earthy', 'Woody', 'Smoky', 'Grassy', 'Herbal']
 };
 
-export const METHOD_LABELS: Record<Method, string> = {
-	espresso: 'Espresso',
-	v60: 'V60',
-	aeropress: 'AeroPress'
-};
-
 export function beanById(beans: Bean[]): Record<string, Bean> {
 	return Object.fromEntries(beans.map((b) => [b.id, b]));
 }
 
 export function grinderById(grinders: Grinder[]): Record<string, Grinder> {
 	return Object.fromEntries(grinders.map((g) => [g.id, g]));
+}
+
+export function machineById(machines: Machine[]): Record<string, Machine> {
+	return Object.fromEntries(machines.map((m) => [m.id, m]));
 }
 
 export function formatExtractionTime(seconds: number): string {

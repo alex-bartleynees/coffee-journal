@@ -7,7 +7,7 @@ import { Schema } from 'effect';
  * server-assigned `cursor` (server_seq) as the pull position.
  */
 
-export const Entity = Schema.Literal('bean', 'grinder', 'brew');
+export const Entity = Schema.Literal('bean', 'grinder', 'brew', 'machine', 'method');
 export type Entity = typeof Entity.Type;
 
 export const SyncRecord = Schema.Struct({

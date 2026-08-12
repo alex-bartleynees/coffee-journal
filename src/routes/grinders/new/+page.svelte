@@ -4,7 +4,6 @@
 	import BackHeader from '$lib/components/BackHeader.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
-	import { METHOD_LABELS } from '$lib/data/sample';
 	import { newId } from '$lib/data/id';
 	import type { Grinder, GrinderType, Method } from '$lib/data/types';
 
@@ -29,7 +28,7 @@
 		{ id: 'espresso', label: 'Espresso' },
 		{ id: 'pourover', label: 'Pourover' }
 	];
-	const methods: Method[] = ['espresso', 'v60', 'aeropress'];
+	const methods = $derived(journal.methods);
 
 	$effect(() => {
 		if (!editId || !existingGrinder || initializedEditId === editId) return;
@@ -47,7 +46,8 @@
 	});
 
 	function addPreset() {
-		presets = [...presets, { method: 'espresso', setting: rangeMin }];
+		const method = methods[0]?.id;
+		if (method) presets = [...presets, { method, setting: rangeMin }];
 	}
 	function removePreset(i: number) {
 		presets = presets.filter((_, idx) => idx !== i);
@@ -151,13 +151,13 @@
 			{#each presets as preset, i (i)}
 				<div class="preset-row">
 					<div class="segmented preset-methods">
-						{#each methods as m (m)}
+						{#each methods as m (m.id)}
 							<button
 								class="seg-btn"
-								class:selected={preset.method === m}
-								onclick={() => (presets[i].method = m)}
+								class:selected={preset.method === m.id}
+								onclick={() => (presets[i].method = m.id)}
 							>
-								{METHOD_LABELS[m]}
+								{m.label}
 							</button>
 						{/each}
 					</div>

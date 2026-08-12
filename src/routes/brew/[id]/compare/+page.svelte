@@ -2,7 +2,8 @@
 	import { page } from '$app/state';
 	import BackHeader from '$lib/components/BackHeader.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
-	import { METHOD_LABELS, beanById, formatExtractionTime } from '$lib/data/sample';
+	import { beanById, formatExtractionTime } from '$lib/data/sample';
+	import { methodLabel } from '$lib/data/methods';
 
 	const beans = $derived(beanById(journal.beans));
 	const a = $derived(journal.brews.find((b) => b.id === page.params.id));
@@ -17,7 +18,7 @@
 		a && b
 			? [
 					{ label: 'Bean', a: beans[a.beanId]?.name, b: beans[b.beanId]?.name },
-					{ label: 'Method', a: METHOD_LABELS[a.method], b: METHOD_LABELS[b.method] },
+					{ label: 'Method', a: methodLabel(journal.methods, a.method), b: methodLabel(journal.methods, b.method) },
 					{ label: 'Dose', a: `${a.doseIn}g`, b: `${b.doseIn}g` },
 					{ label: 'Yield', a: `${a.yieldOut}g`, b: `${b.yieldOut}g` },
 					{ label: 'Ratio', a: a.ratio, b: b.ratio },

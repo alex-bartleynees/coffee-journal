@@ -1,10 +1,12 @@
-import { METHOD_LABELS, beanById } from '$lib/data/sample';
-import type { Bean, Brew, Grinder } from '$lib/data/types';
+import { beanById } from '$lib/data/sample';
+import { methodLabel } from '$lib/data/methods';
+import type { Bean, Brew, Grinder, MethodDef } from '$lib/data/types';
 
 export interface JournalSearchSource {
 	beans: Bean[];
 	brews: Brew[];
 	grinders: Grinder[];
+	methods: MethodDef[];
 }
 
 export interface JournalSearchResults {
@@ -41,7 +43,7 @@ export function searchJournal(
 			const bean = beansById[brew.beanId];
 			return containsQuery(
 				[
-					METHOD_LABELS[brew.method],
+					methodLabel(source.methods, brew.method),
 					brew.method,
 					brew.aroma,
 					brew.flavor,

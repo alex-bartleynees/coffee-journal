@@ -11,6 +11,7 @@
 	const beans = $derived(beanById(journal.beans));
 	const bean = $derived(brew ? beans[brew.beanId] : undefined);
 	const grinder = $derived(brew ? journal.grinders.find((g) => g.id === brew.grinder) : undefined);
+	const machine = $derived(brew?.machine ? journal.machines.find((m) => m.id === brew.machine) : undefined);
 
 	const prevBrew = $derived.by(() => {
 		if (!brew) return undefined;
@@ -36,7 +37,7 @@
 			{/snippet}
 		</BackHeader>
 
-		<BrewDetail {brew} {bean} {grinder} {prevBrew} {prevBean} />
+		<BrewDetail {brew} {bean} {grinder} {machine} {prevBrew} {prevBean} />
 	</div>
 {:else}
 	<div class="screen">

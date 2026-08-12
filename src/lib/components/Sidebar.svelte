@@ -11,6 +11,8 @@
 		{ href: '/', icon: 'journal', label: 'Journal', count: journal.brews.length },
 		{ href: '/beans', icon: 'bean', label: 'Beans', count: journal.beans.length },
 		{ href: '/grinders', icon: 'coffee', label: 'Grinders', count: journal.grinders.length },
+		{ href: '/machines', icon: 'machine', label: 'Machines', count: journal.machines.length },
+		{ href: '/methods', icon: 'cup', label: 'Methods', count: journal.methods.length },
 		{ href: '/stats', icon: 'compare', label: 'Insights' }
 	]);
 </script>

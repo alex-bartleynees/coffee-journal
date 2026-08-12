@@ -1,25 +1,30 @@
 <script lang="ts">
+	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
-	import type { Bean, Method } from '$lib/data/types';
+	import type { Bean, Machine, MethodDef } from '$lib/data/types';
 	import type { DraftBrew } from './DraftBrew';
 
 	interface Props {
 		draft: DraftBrew;
 		beans: Bean[];
+		methods: MethodDef[];
+		machines: Machine[];
 		includeBeanId?: string;
 	}
 
-	let { draft, beans, includeBeanId }: Props = $props();
-
-	const methods: { id: Method; label: string }[] = [
-		{ id: 'espresso', label: 'Espresso' },
-		{ id: 'v60', label: 'V60' },
-		{ id: 'aeropress', label: 'AeroPress' }
-	];
+	let { draft, beans, methods, machines, includeBeanId }: Props = $props();
 
 	const roastColor: Record<string, string> = { light: '#C9A57B', medium: '#8E5A3B', dark: '#4A2C1F' };
 
 	const selectedBean = $derived(beans.find((b) => b.id === draft.beanId));
+	const methodMachines = $derived(machines.filter((m) => m.method === draft.method));
+
+	// Reset/preselect the machine whenever the method changes (including on
+	// first mount) so a stale machine from a different method never lingers.
+	$effect(() => {
+		if (draft.machine && methodMachines.some((m) => m.id === draft.machine)) return;
+		draft.machine = methodMachines[0]?.id ?? null;
+	});
 </script>
 
 <div class="step">
@@ -47,7 +52,7 @@
 		<div class="method-grid">
 			{#each methods as m (m.id)}
 				<button class="method-option" class:selected={draft.method === m.id} onclick={() => (draft.method = m.id)}>
-					<Icon name={m.id} size={26} strokeWidth={1.4} />
+					<MethodIcon method={m.id} size={26} strokeWidth={1.4} />
 					<span>{m.label}</span>
 				</button>
 			{/each}
@@ -71,6 +76,17 @@
 				>
 					<span class="toggle-thumb"></span>
 				</button>
+			</div>
+		{/if}
+
+		{#if methodMachines.length > 0}
+			<div class="section-label">Machine</div>
+			<div class="chip-group">
+				{#each methodMachines as m (m.id)}
+					<button class="chip" class:active={draft.machine === m.id} onclick={() => (draft.machine = m.id)}>
+						{m.name}
+					</button>
+				{/each}
 			</div>
 		{/if}
 
