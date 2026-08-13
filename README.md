@@ -1,72 +1,99 @@
 # Bloom — Coffee Journal
 
-A local-first coffee brewing and tasting journal: track beans, grinders, and
-individual brews (espresso, V60, AeroPress) with recipe data, tasting notes,
-and ratings. Mobile-first, usable fully offline with no account required —
-signing in is optional and only enables sync.
+Bloom is a local-first coffee brewing and tasting journal. It tracks beans,
+grinders, machines, brewing methods, and individual brews with recipe data,
+tasting notes, ratings, and bean-bag photos.
+
+The app is mobile-first, installable as a PWA, and fully usable offline without
+an account. Signing in is optional; a Bloom Sync subscription adds multi-device
+record and photo sync.
 
 ## Status
 
-**Phase 1 complete**: design system, static UI, all screens are built and
-navigable, backed by in-memory sample data.
+Bloom is deployed at [app.coffeesjournal.com](https://app.coffeesjournal.com)
+and is currently being dogfooded ahead of its public launch.
 
-**Phase 2 (not started)**: Effect.ts for state management, local SQLite
-storage (browser, via WASM/OPFS), and backend sync that activates once
-signed in.
+- Local SQLite/OPFS persistence, offline PWA support, authentication, billing,
+  record sync, and cross-device bean-photo sync are live.
+- Machines and data-driven brewing methods are live with local CRUD and sync.
+  They are completing a multi-day production soak test with no issues found so
+  far.
+- Bean photos are syncing successfully across devices in production.
+- The next product phase is subscriber-only AI autofill from bean-bag photos,
+  followed by the `coffeesjournal.com` marketing-site launch.
 
 ## Stack
 
-- [SvelteKit](https://svelte.dev/docs/kit) (Svelte 5, runes) + TypeScript + Vite
-- Design tokens ported from a Claude Design source project — see
-  `src/lib/styles/app.css` for the full palette/type system
-- No backend yet; all data currently lives in in-memory stores under
-  `src/lib/stores/` (reset on page reload — this is a Phase 1 stand-in)
+- [SvelteKit](https://svelte.dev/docs/kit) with Svelte 5, TypeScript, and Vite
+- SQLite WASM in a Web Worker, persisted locally through OPFS
+- Effect for sync orchestration and typed application workflows
+- A service worker and web app manifest for installable offline PWA support
+- A separate Effect/Node/Postgres sync API, with authentication through the BFF
+- Private Backblaze B2 storage for subscriber photo sync
+- Stripe-backed Bloom Sync subscriptions
+
+Design tokens and the visual system live in `src/lib/styles/app.css`.
 
 ## Developing
 
-This machine has no global Node.js — a project-local Nix flake
-(`flake.nix`) provides `nodejs_22`. Run everything through `nix develop`:
+The project-local Nix flake provides Node.js 22 on machines without a global
+Node installation:
 
 ```sh
-nix develop -c npm run dev        # start the dev server
+nix develop -c npm run dev        # start the development server
 nix develop -c npm run dev -- --open
-nix develop -c npm run check      # type-check (svelte-check)
-nix develop -c npm run build      # production build
+nix develop -c npm test           # run the Vitest suite
+nix develop -c npm run check      # run Svelte and TypeScript diagnostics
+nix develop -c npm run build      # create the production build
 nix develop -c npm run preview    # preview the production build
 ```
 
-If you have Node 22+ on your PATH already, the plain `npm run ...` commands
-work too — the flake just exists so this repo doesn't require anything
-installed globally on NixOS.
+If Node.js 22 or newer is already available, the plain `npm` commands work too.
 
 ## Project structure
 
-```
+```text
 src/
 ├── lib/
-│   ├── styles/app.css       design tokens + base mobile app CSS classes
-│   ├── data/                 types.ts (Bean/Grinder/Brew) + sample.ts (seed data)
-│   ├── icons/Icon.svelte     the full hand-drawn icon set, one component
-│   ├── stores/                journal/auth/theme state (Phase 1 in-memory stand-ins)
-│   └── components/           shared UI (Sidebar, TopBar, cards, new-brew flow steps, ...)
-└── routes/
-    ├── +page.svelte           Journal / Home
-    ├── beans/[id]?             Beans list + detail
-    ├── grinders/[id]?          Grinders list + detail
-    ├── brew/[id]/(compare)     Brew detail + compare-to-last
-    ├── stats/                  Insights
-    ├── new/                    4-step New Brew flow (Bean → Brew → Taste → Verdict)
-    └── login/                  Sign in / create account (never a gate — app works without it)
+│   ├── components/          shared UI and New Brew flow
+│   ├── data/                domain types, sample data, and pure data helpers
+│   ├── db/                  SQLite schema, worker, queries, and sync queries
+│   ├── images/              local bean-photo processing and persistence helpers
+│   ├── stores/              journal, authentication, search, and theme state
+│   ├── styles/app.css       design tokens and shared application styles
+│   └── sync/                record and photo synchronization engines
+├── routes/
+│   ├── +page.svelte         journal and brew history
+│   ├── account/             Bloom Sync account management
+│   ├── beans/               bean list, detail, create, and edit flows
+│   ├── brew/                brew detail and comparison
+│   ├── grinders/            grinder list, detail, create, and edit flows
+│   ├── machines/            machine list, detail, create, and edit flows
+│   ├── methods/             brewing-method list, detail, create, and edit flows
+│   ├── new/                 four-step New Brew flow
+│   ├── pricing/             Bloom Sync subscription entry point
+│   ├── stats/               brewing insights
+│   └── login/ + signup/     Keycloak-backed authentication entry points
+└── service-worker.ts        offline shell and runtime caching
 ```
 
-Sidebar nav (desktop, ≥860px) and bottom nav + FAB (mobile) share the same
-routes and components — the layout switches via a CSS breakpoint, not a
-separate app.
+Desktop navigation and split-pane detail views activate at `860px`; mobile uses
+the same routes and components with bottom navigation and full-screen details.
 
-## Notes
+## Product model
 
-- App usage requires no login. A dismissible banner and sidebar footer link
-  point to `/login`, but every screen works fully offline first.
-- The "paid plan / trial" step from the original design's sign-up flow was
-  deliberately left out — it's a monetization feature tied to a backend that
-  doesn't exist yet.
+- The journal remains free and device-local forever.
+- Accounts are optional and never gate the offline journal.
+- Bloom Sync is the paid feature: it synchronizes journal records and bean
+  photos across devices.
+- AI bean-bag autofill will be subscriber-only and will always present extracted
+  details for review before saving.
+
+## Roadmap
+
+1. Complete the Machines and Methods production soak test.
+2. Build AI-assisted bean autofill from bag photos, with a manual fallback and
+   review-and-confirm workflow.
+3. Validate the AI flow on mobile and across varied real-world packaging.
+4. Update and deploy the marketing site at `coffeesjournal.com`, then publicly
+   launch Bloom.

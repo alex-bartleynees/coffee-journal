@@ -3,6 +3,7 @@
 	import { todayIso, daysBetween } from '$lib/data/date';
 	import type { CalendarDate } from '$lib/data/date';
 	import type { Bean, Brew } from '$lib/data/types';
+	import { beanInventory } from '$lib/data/bean-inventory';
 
 	let { bean, beanBrews }: { bean: Bean; beanBrews: Brew[] } = $props();
 
@@ -11,8 +12,9 @@
 	);
 	const totalGrams = $derived(beanBrews.reduce((s, b) => s + b.doseIn, 0));
 	const cost = $derived(bean.pricePerKg * (bean.bagWeight / 1000));
-	const remaining = $derived(bean.bagWeight - totalGrams);
-	const pctUsed = $derived((totalGrams / bean.bagWeight) * 100);
+	const inventory = $derived(beanInventory(bean.bagWeight, beanBrews.map((brew) => brew.doseIn)));
+	const remaining = $derived(inventory.remainingGrams);
+	const pctUsed = $derived(inventory.percentUsed);
 	const avgGramsPerBrew = $derived(beanBrews.length ? totalGrams / beanBrews.length : 0);
 
 	function daysAgo(d: CalendarDate) {

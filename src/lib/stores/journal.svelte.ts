@@ -22,6 +22,7 @@ import {
 } from '$lib/db/queries';
 import { sync } from '$lib/sync/engine.svelte';
 import { ensureDefaultMethods } from '$lib/db/default-methods';
+import { beanInventory } from '$lib/data/bean-inventory';
 
 let beans = $state<Bean[]>([]);
 let brews = $state<Brew[]>([]);
@@ -31,6 +32,17 @@ let methods = $state<MethodDef[]>([]);
 let ready = $state(false);
 let persistent = $state(false);
 let error = $state<string | null>(null);
+
+function finishConsumedBeans(): void {
+	beans = beans.map((bean) => {
+		if (bean.finished) return bean;
+		const doses = brews.filter((brew) => brew.beanId === bean.id).map((brew) => brew.doseIn);
+		if (!beanInventory(bean.bagWeight, doses).finished) return bean;
+		const finishedBean = { ...bean, finished: true };
+		insertBean(finishedBean).catch(console.error);
+		return finishedBean;
+	});
+}
 
 async function seedIfEmpty(): Promise<void> {
 	// Sample data is a dev convenience only — real usage starts empty.
@@ -69,6 +81,7 @@ async function init(): Promise<void> {
 		await seedIfEmpty();
 		beans = await getAllBeans();
 		brews = await getAllBrews();
+		finishConsumedBeans();
 		grinders = await getAllGrinders();
 		machines = await getAllMachines();
 		methods = await getAllMethods();
@@ -84,6 +97,7 @@ async function init(): Promise<void> {
 async function reload(): Promise<void> {
 	beans = await getAllBeans();
 	brews = await getAllBrews();
+	finishConsumedBeans();
 	grinders = await getAllGrinders();
 	machines = await getAllMachines();
 	methods = await getAllMethods();
@@ -95,6 +109,7 @@ function addBrew(brew: Brew): void {
 	if (idx >= 0) {
 		beans = beans.map((b, i) => (i === idx ? { ...b, brews: b.brews + 1 } : b));
 	}
+	finishConsumedBeans();
 	insertBrew(brew).catch(console.error);
 	sync.schedule();
 }
@@ -128,6 +143,7 @@ function updateBrew(updated: Brew): void {
 			return bean;
 		});
 	}
+	finishConsumedBeans();
 	insertBrew(updated).catch(console.error);
 	sync.schedule();
 }
