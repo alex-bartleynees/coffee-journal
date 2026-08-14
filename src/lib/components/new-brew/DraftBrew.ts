@@ -1,9 +1,10 @@
-import type { Brew, Method } from '$lib/data/types';
+import type { Brew, Method, MilkDrink } from '$lib/data/types';
 
 export interface DraftBrew {
 	beanId: string;
 	method: Method;
 	withMilk: boolean;
+	milkDrink: MilkDrink | null;
 	machine: string | null;
 	grinder: string;
 	grindSetting: number;
@@ -29,6 +30,7 @@ export function createDraft(beanId: string): DraftBrew {
 		beanId,
 		method: 'espresso',
 		withMilk: false,
+		milkDrink: null,
 		machine: null,
 		grinder: 'g1',
 		grindSetting: 14,
@@ -55,6 +57,7 @@ export function draftFromBrew(brew: Brew): DraftBrew {
 		beanId: brew.beanId,
 		method: brew.method,
 		withMilk: brew.withMilk ?? false,
+		milkDrink: brew.milkDrink ?? (brew.withMilk ? 'Flat White' : null),
 		machine: brew.machine ?? null,
 		grinder: brew.grinder,
 		grindSetting: brew.grindSetting,

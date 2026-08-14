@@ -1,7 +1,7 @@
 <script lang="ts">
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
-	import type { Bean, Machine, MethodDef } from '$lib/data/types';
+	import { MILK_DRINKS, type Bean, type Machine, type MethodDef, type MilkDrink } from '$lib/data/types';
 	import type { DraftBrew } from './DraftBrew';
 
 	interface Props {
@@ -18,6 +18,12 @@
 
 	const selectedBean = $derived(beans.find((b) => b.id === draft.beanId));
 	const methodMachines = $derived(machines.filter((m) => m.method === draft.method));
+
+	function selectMilkDrink(drink: MilkDrink) {
+		const selected = draft.withMilk && draft.milkDrink === drink;
+		draft.withMilk = !selected;
+		draft.milkDrink = selected ? null : drink;
+	}
 
 	// Reset/preselect the machine whenever the method changes (including on
 	// first mount) so a stale machine from a different method never lingers.
@@ -59,23 +65,21 @@
 		</div>
 
 		{#if draft.method === 'espresso'}
-			<div class="milk-row">
+			<div class="milk-card">
 				<div class="milk-left">
 					<Icon name="milk" size={18} stroke="var(--ink-2)" />
 					<div>
 						<div class="milk-title">With milk</div>
-						<div class="milk-sub">Adds flat white rating</div>
+						<div class="milk-sub">Adds a second rating for the milk drink</div>
 					</div>
 				</div>
-				<button
-					class="toggle"
-					class:on={draft.withMilk}
-					onclick={() => (draft.withMilk = !draft.withMilk)}
-					aria-label="With milk"
-					aria-pressed={draft.withMilk}
-				>
-					<span class="toggle-thumb"></span>
-				</button>
+				<div class="milk-options" aria-label="Milk drink">
+					{#each MILK_DRINKS as drink (drink)}
+						<button class="milk-chip" class:active={draft.withMilk && draft.milkDrink === drink} onclick={() => selectMilkDrink(drink)} aria-pressed={draft.withMilk && draft.milkDrink === drink}>
+							{drink}
+						</button>
+					{/each}
+				</div>
 			</div>
 		{/if}
 
@@ -203,15 +207,12 @@
 		font-weight: 600;
 		letter-spacing: 0.3px;
 	}
-	.milk-row {
+	.milk-card {
 		margin-top: 8px;
-		padding: 12px 14px;
+		padding: 16px 14px;
 		background: var(--card);
 		border-radius: var(--r-md);
 		border: 1px solid var(--line-soft);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
 	}
 	.milk-left {
 		display: flex;
@@ -227,30 +228,24 @@
 		font-size: 11px;
 		color: var(--ink-3);
 	}
-	.toggle {
-		width: 44px;
-		height: 26px;
-		border-radius: 100px;
-		background: var(--line);
-		position: relative;
-		transition: background 0.2s;
+	.milk-options {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 14px;
 	}
-	.toggle.on {
+	.milk-chip {
+		padding: 8px 14px;
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		background: var(--card-2);
+		color: var(--ink-2);
+		font-size: 13px;
+	}
+	.milk-chip.active {
 		background: var(--ink);
-	}
-	.toggle-thumb {
-		position: absolute;
-		top: 2px;
-		left: 2px;
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		background: #fff;
-		transition: left 0.2s;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-	}
-	.toggle.on .toggle-thumb {
-		left: 20px;
+		border-color: var(--ink);
+		color: var(--paper);
 	}
 
 	@media (min-width: 860px) {

@@ -20,7 +20,7 @@
 		<RatingDial value={draft.rating} onChange={(v) => (draft.rating = v)} />
 
 		{#if draft.withMilk}
-			<div class="section-label">In milk (flat white)</div>
+			<div class="section-label">In milk ({draft.milkDrink ?? 'Flat White'})</div>
 			<RatingDial value={draft.rating2 ?? 7} onChange={(v) => (draft.rating2 = v)} accent />
 
 			<div class="milk-row">

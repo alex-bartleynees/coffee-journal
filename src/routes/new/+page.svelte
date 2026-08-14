@@ -73,7 +73,8 @@
 			ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',
 			recipeNotes: draft.recipeNotes.trim() || undefined,
 			machine: draft.machine ?? undefined,
-			rating2: draft.withMilk ? draft.rating2 : null
+			rating2: draft.withMilk ? draft.rating2 : null,
+			milkDrink: draft.withMilk ? draft.milkDrink : null
 		};
 		if (existingBrew) journal.updateBrew(brew);
 		else {

@@ -29,6 +29,7 @@ export type BrewRow = {
 	rating2: number | null; aroma: string | null; flavor: string | null;
 	body: string | null; finish: string | null; descriptors: string | null;
 	with_milk: number | null; cuts_thru_milk: number | null;
+	milk_drink: string | null;
 	buy_again: string | null; best_for: string | null; recipe_notes: string | null;
 	favorite: number;
 };
@@ -85,6 +86,7 @@ export function brewFromRow(r: BrewRow): Brew {
 	if (r.finish != null) brew.finish = r.finish;
 	brew.descriptors = r.descriptors ? (JSON.parse(r.descriptors) as string[]) : [];
 	if (r.with_milk != null) brew.withMilk = !!r.with_milk;
+	if (r.milk_drink != null) brew.milkDrink = r.milk_drink as Brew['milkDrink'];
 	if (r.cuts_thru_milk != null) brew.cutsThruMilk = !!r.cuts_thru_milk;
 	brew.buyAgain = (r.buy_again as Brew['buyAgain']) ?? null;
 	brew.bestFor = (r.best_for as Brew['bestFor']) ?? null;
@@ -226,9 +228,9 @@ export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()):
 		`INSERT OR REPLACE INTO brews
 			(id, bean_id, method, date, time, grinder, machine, grind_setting, dose_in, yield_out,
 			 extraction_time, temperature, ratio, rating, rating2, aroma, flavor, body, finish,
-			 descriptors, with_milk, cuts_thru_milk, buy_again, best_for, recipe_notes,
+			 descriptors, with_milk, milk_drink, cuts_thru_milk, buy_again, best_for, recipe_notes,
 			 favorite, updated_at, deleted, dirty)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
 			brew.id, brew.beanId, brew.method, brew.date, brew.time, brew.grinder, brew.machine ?? null,
 			brew.grindSetting, brew.doseIn, brew.yieldOut, brew.extractionTime,
@@ -236,6 +238,7 @@ export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()):
 			brew.aroma ?? null, brew.flavor ?? null, brew.body ?? null, brew.finish ?? null,
 			JSON.stringify(brew.descriptors ?? []),
 			brew.withMilk != null ? (brew.withMilk ? 1 : 0) : null,
+			brew.withMilk ? (brew.milkDrink ?? 'Flat White') : null,
 			brew.cutsThruMilk != null ? (brew.cutsThruMilk ? 1 : 0) : null,
 			brew.buyAgain ?? null, brew.bestFor ?? null, brew.recipeNotes ?? null,
 			brew.favorite ? 1 : 0,

@@ -86,8 +86,12 @@ export interface Brew {
 	finish?: string;
 	descriptors?: string[];
 	withMilk?: boolean;
+	milkDrink?: MilkDrink | null;
 	cutsThruMilk?: boolean;
 	buyAgain?: 'Yes' | 'Maybe' | 'No' | null;
 	bestFor?: 'Daily driver' | 'Occasional' | 'Skip' | null;
 	favorite?: boolean;
 }
+
+export const MILK_DRINKS = ['Flat White', 'Latte', 'Cappuccino', 'Cortado', 'Mocha', 'Other'] as const;
+export type MilkDrink = (typeof MILK_DRINKS)[number];

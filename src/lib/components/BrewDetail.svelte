@@ -36,7 +36,7 @@
 <div class="brew-detail">
   <div class="hero">
     <div class="hero-sub">
-      {dateStr(brew.date)} · {brew.time} · {methodLabel(journal.methods, brew.method)}{brew.withMilk ? " + milk" : ""}
+      {dateStr(brew.date)} · {brew.time} · {methodLabel(journal.methods, brew.method)}{brew.withMilk ? ` + ${brew.milkDrink ?? "milk"}` : ""}
     </div>
     <h1 class="hero-title">{bean.name}</h1>
     <div class="hero-meta">
@@ -56,7 +56,7 @@
       {#if brew.rating2 != null}
         <div class="rating-sep"></div>
         <div class="rating-col">
-          <div class="rating-label"><Icon name="milk" size={11} /> In milk</div>
+          <div class="rating-label"><Icon name="milk" size={11} /> {brew.milkDrink ?? 'In milk'}</div>
           <div class="rating-value">
             {brew.rating2}<span class="rating-denom">/ 10</span>
           </div>

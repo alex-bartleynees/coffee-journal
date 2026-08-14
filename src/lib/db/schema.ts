@@ -3,10 +3,11 @@
  * worker brings pre-existing OPFS databases up to this version. v1 added the
  * sync-metadata columns (`updated_at` / `deleted` / `dirty`) to the three
  * syncable tables; v2 added brew recipe notes; v5 added the `machines` and
- * `methods` tables and `brews.machine`; v6 added `methods.notes` — see
+ * `methods` tables and `brews.machine`; v6 added `methods.notes`; v7 added
+ * `brews.milk_drink` — see
  * [[Sync-Protocol]].
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /**
  * Sync-metadata columns present on every syncable table (beans/grinders/brews):
@@ -27,7 +28,8 @@ export const SYNCABLE_TABLES = ['beans', 'grinders', 'brews', 'machines', 'metho
 /** Brew columns added after the initial schema, used to upgrade existing DBs. */
 export const BREW_MIGRATION_COLUMNS: readonly [string, string][] = [
 	['recipe_notes', 'TEXT'],
-	['machine', 'TEXT']
+	['machine', 'TEXT'],
+	['milk_drink', 'TEXT']
 ];
 
 export const METHOD_MIGRATION_COLUMNS: readonly [string, string][] = [['notes', 'TEXT']];
@@ -136,6 +138,7 @@ export const SCHEMA_SQL = `
 		finish          TEXT,
 		descriptors     TEXT DEFAULT '[]',
 		with_milk       INTEGER,
+		milk_drink      TEXT,
 		cuts_thru_milk  INTEGER,
 		buy_again       TEXT,
 		best_for        TEXT,
