@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import TopBar from '$lib/components/TopBar.svelte';
 	import BeanBag from '$lib/components/BeanBag.svelte';
 	import RoastDot from '$lib/components/RoastDot.svelte';
@@ -8,9 +9,20 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import { search } from '$lib/stores/search.svelte';
 	import { todayIso, daysBetween } from '$lib/data/date';
+	import { storedBeanFilter, type BeanFilter } from '$lib/data/bean-filter';
 	import type { CalendarDate } from '$lib/data/date';
 
-	let filter = $state<'all' | 'active' | 'finished'>('all');
+	const FILTER_STORAGE_KEY = 'bloom:beans-filter';
+	let filter = $state<BeanFilter>('all');
+
+	onMount(() => {
+		filter = storedBeanFilter(localStorage.getItem(FILTER_STORAGE_KEY));
+	});
+
+	function selectFilter(next: BeanFilter) {
+		filter = next;
+		localStorage.setItem(FILTER_STORAGE_KEY, next);
+	}
 
 	const beans = $derived(journal.beans);
 	const brews = $derived(journal.brews);
@@ -59,7 +71,7 @@
 
 		<div class="filter-row">
 			{#each ['all', 'active', 'finished'] as const as f (f)}
-				<button class="chip" class:active={filter === f} onclick={() => (filter = f)}>
+				<button class="chip" class:active={filter === f} onclick={() => selectFilter(f)}>
 					{f}
 					<span class="filter-count">{counts[f]}</span>
 				</button>
