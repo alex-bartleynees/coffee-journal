@@ -3,13 +3,12 @@
 	import type { Bean, Brew, Machine } from '$lib/data/types';
 	import { methodLabel } from '$lib/data/methods';
 	import { journal } from '$lib/stores/journal.svelte';
+	import { averageRating } from '$lib/data/ratings';
 
 	let { machine, myBrews, beanById: beans }: { machine: Machine; myBrews: Brew[]; beanById: Record<string, Bean> } =
 		$props();
 
-	const avgRating = $derived(
-		myBrews.length ? myBrews.reduce((s, b) => s + b.rating, 0) / myBrews.length : null
-	);
+	const avgRating = $derived(averageRating(myBrews));
 </script>
 
 <div class="machine-detail">
@@ -21,9 +20,7 @@
 		</div>
 		<div class="hero-maker">{machine.maker}</div>
 		<h2 class="hero-name">{machine.name}</h2>
-		{#if avgRating != null}
-			<div class="hero-sub">★ {avgRating.toFixed(1)} avg · {myBrews.length} brews</div>
-		{/if}
+		<div class="hero-sub">{avgRating == null ? `${myBrews.length} brews` : `★ ${avgRating.toFixed(1)} avg · ${myBrews.length} brews`}</div>
 	</div>
 
 	{#if machine.notes}
@@ -39,7 +36,7 @@
 					<div class="log-name">{bean?.name}</div>
 					<div class="log-sub">{methodLabel(journal.methods, br.method)} · {br.date}</div>
 				</div>
-				<div class="log-rating">★ {br.rating}</div>
+				<div class="log-rating">{br.rating == null ? 'Not rated' : `★ ${br.rating}`}</div>
 			</a>
 		{:else}
 			<div class="log-empty">No brews logged yet</div>

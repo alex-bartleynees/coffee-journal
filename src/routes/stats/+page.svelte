@@ -3,12 +3,13 @@
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { methodLabel } from '$lib/data/methods';
+	import { averageRating } from '$lib/data/ratings';
 
 	const brews = $derived(journal.brews);
 	const beans = $derived(journal.beans);
 
 	const total = $derived(brews.length);
-	const avgRating = $derived(brews.reduce((s, b) => s + b.rating, 0) / total);
+	const avgRating = $derived(averageRating(brews));
 	const totalGrams = $derived(brews.reduce((s, b) => s + b.doseIn, 0));
 
 	const byMethod = $derived.by(() => {
@@ -50,7 +51,7 @@
 		</div>
 		<div class="kpi-tile">
 			<div class="mini-label">Avg rating</div>
-			<div class="kpi-value">{avgRating.toFixed(2)}<span class="kpi-suffix">/10</span></div>
+			<div class="kpi-value">{avgRating == null ? '—' : avgRating.toFixed(2)}{#if avgRating != null}<span class="kpi-suffix">/10</span>{/if}</div>
 		</div>
 		<div class="kpi-tile">
 			<div class="mini-label">Spent on beans</div>

@@ -25,7 +25,7 @@ export type BeanRow = {
 export type BrewRow = {
 	id: string; bean_id: string; method: string; date: string; time: string;
 	grinder: string; machine: string | null; grind_setting: number; dose_in: number; yield_out: number;
-	extraction_time: number; temperature: number; ratio: string; rating: number;
+	extraction_time: number; temperature: number; ratio: string; rating: number | null;
 	rating2: number | null; aroma: string | null; flavor: string | null;
 	body: string | null; finish: string | null; descriptors: string | null;
 	with_milk: number | null; cuts_thru_milk: number | null;

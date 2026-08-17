@@ -10,6 +10,7 @@
 	import { search } from '$lib/stores/search.svelte';
 	import { todayIso, daysBetween } from '$lib/data/date';
 	import { storedBeanFilter, type BeanFilter } from '$lib/data/bean-filter';
+	import { averageRating } from '$lib/data/ratings';
 	import type { CalendarDate } from '$lib/data/date';
 
 	const FILTER_STORAGE_KEY = 'bloom:beans-filter';
@@ -81,7 +82,7 @@
 		<div class="bean-list">
 			{#each list as bean (bean.id)}
 				{@const beanBrews = brews.filter((br) => br.beanId === bean.id)}
-				{@const avg = beanBrews.length ? (beanBrews.reduce((s, b) => s + b.rating, 0) / beanBrews.length).toFixed(1) : null}
+				{@const avg = averageRating(beanBrews)}
 				<a
 					class="bean-card"
 					class:finished={bean.finished}
@@ -103,9 +104,9 @@
 						<div class="bean-meta mono">
 							<RoastDot roast={bean.roast} />
 							<span>{bean.brews}× brewed</span>
-							{#if avg}
+							{#if avg != null}
 								<span class="dim">·</span>
-								<span class="avg">★ {avg}</span>
+								<span class="avg">★ {avg.toFixed(1)}</span>
 							{/if}
 							<span class="dim">·</span>
 							<span>{daysSince(bean.dateOpened)}d</span>

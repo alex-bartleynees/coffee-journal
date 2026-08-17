@@ -8,6 +8,7 @@
   import { search } from "$lib/stores/search.svelte";
   import { beanById } from "$lib/data/sample";
   import { methodLabel } from "$lib/data/methods";
+  import { averageRating } from "$lib/data/ratings";
   import {
     calendarDate,
     todayIso,
@@ -76,9 +77,7 @@
     }
   }
 
-  const avgRating = $derived(
-    (brews.reduce((s, b) => s + b.rating, 0) / brews.length).toFixed(1),
-  );
+  const avgRating = $derived(averageRating(brews));
   const favMethod = $derived.by(() => {
     const c: Record<string, number> = {};
     brews.forEach((b) => (c[b.method] = (c[b.method] || 0) + 1));
@@ -129,7 +128,7 @@
       <div class="stat-item">
         <div class="stat-label">Avg</div>
         <div class="stat-value serif">
-          {avgRating}<span class="stat-unit">/ 10</span>
+          {avgRating == null ? "—" : avgRating.toFixed(1)}{#if avgRating != null}<span class="stat-unit">/ 10</span>{/if}
         </div>
       </div>
       <div class="stat-divider"></div>
@@ -179,8 +178,11 @@
                   <div class="row1">
                     <div class="bean-name">{bean.name}</div>
                     <div class="rating">
-                      <span class="num">{brew.rating}</span>
-                      <span class="denom">/10</span>
+                      {#if brew.rating == null}
+                        <span class="denom">Not rated</span>
+                      {:else}
+                        <span class="num">{brew.rating}</span><span class="denom">/10</span>
+                      {/if}
                     </div>
                   </div>
                   <div class="roaster">

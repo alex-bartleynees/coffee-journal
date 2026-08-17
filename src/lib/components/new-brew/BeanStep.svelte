@@ -54,6 +54,22 @@
 	</div>
 
 	<div class="col-right">
+		<div class="quick-card">
+			<div>
+				<div class="quick-title">Quick brew</div>
+				<div class="quick-sub">Save after the recipe — skip tasting notes and verdict.</div>
+			</div>
+			<button
+				class="toggle"
+				class:on={draft.quickBrew}
+				onclick={() => (draft.quickBrew = !draft.quickBrew)}
+				aria-label="Quick brew"
+				aria-pressed={draft.quickBrew}
+			>
+				<span class="toggle-thumb"></span>
+			</button>
+		</div>
+
 		<div class="section-label">Method</div>
 		<div class="method-grid">
 			{#each methods as m (m.id)}
@@ -118,6 +134,50 @@
 	.selected-bean-card {
 		display: none;
 	}
+	.quick-card {
+		margin: 16px 0;
+		padding: 14px;
+		background: var(--card);
+		border: 1px solid var(--line-soft);
+		border-radius: var(--r-md);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+	.quick-title {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--ink);
+	}
+	.quick-sub {
+		margin-top: 2px;
+		font-size: 11px;
+		line-height: 1.4;
+		color: var(--ink-3);
+	}
+	.toggle {
+		width: 44px;
+		height: 26px;
+		border-radius: 100px;
+		background: var(--line);
+		position: relative;
+		flex-shrink: 0;
+		transition: background 0.2s;
+	}
+	.toggle.on { background: var(--ink); }
+	.toggle-thumb {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: #fff;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+		transition: left 0.2s;
+	}
+	.toggle.on .toggle-thumb { left: 20px; }
 	.hint {
 		font-size: 12px;
 		color: var(--ink-3);
@@ -249,6 +309,9 @@
 	}
 
 	@media (min-width: 860px) {
+		.quick-card {
+			margin: 0;
+		}
 		.step {
 			padding: 0;
 			display: grid;

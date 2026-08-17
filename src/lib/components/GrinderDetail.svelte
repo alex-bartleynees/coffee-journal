@@ -13,7 +13,7 @@
 			(agg[b.method] ??= { count: 0, settings: [], ratings: [] });
 			agg[b.method].count++;
 			agg[b.method].settings.push(b.grindSetting);
-			agg[b.method].ratings.push(b.rating);
+			if (b.rating != null) agg[b.method].ratings.push(b.rating);
 		});
 		return agg;
 	});
@@ -65,7 +65,7 @@
 		<div class="method-card">
 			{#each Object.entries(byMethod) as [m, agg], i (m)}
 				{@const avgSetting = agg.settings.reduce((a, b) => a + b, 0) / agg.settings.length}
-				{@const avgRating = agg.ratings.reduce((a, b) => a + b, 0) / agg.ratings.length}
+				{@const avgRating = agg.ratings.length ? agg.ratings.reduce((a, b) => a + b, 0) / agg.ratings.length : null}
 				<div class="method-row" class:last={i === Object.keys(byMethod).length - 1}>
 					<div class="method-name">{methodLabel(journal.methods, m)}</div>
 					<div>
@@ -74,7 +74,7 @@
 					</div>
 					<div class="method-right">
 						<div class="method-sublabel">{agg.count} {agg.count === 1 ? 'brew' : 'brews'}</div>
-						<div class="method-rating">★ {avgRating.toFixed(1)}</div>
+						<div class="method-rating">{avgRating == null ? 'Not rated' : `★ ${avgRating.toFixed(1)}`}</div>
 					</div>
 				</div>
 			{/each}
@@ -91,7 +91,7 @@
 					<div class="log-name">{bean?.name}</div>
 					<div class="log-sub">{methodLabel(journal.methods, br.method)} · {br.date}</div>
 				</div>
-				<div class="log-rating">★ {br.rating}</div>
+				<div class="log-rating">{br.rating == null ? 'Not rated' : `★ ${br.rating}`}</div>
 			</a>
 		{:else}
 			<div class="log-empty">No brews logged yet</div>

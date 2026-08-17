@@ -4,10 +4,10 @@
  * sync-metadata columns (`updated_at` / `deleted` / `dirty`) to the three
  * syncable tables; v2 added brew recipe notes; v5 added the `machines` and
  * `methods` tables and `brews.machine`; v6 added `methods.notes`; v7 added
- * `brews.milk_drink` — see
+ * `brews.milk_drink`; v8 made `brews.rating` nullable for Quick brew — see
  * [[Sync-Protocol]].
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /**
  * Sync-metadata columns present on every syncable table (beans/grinders/brews):
@@ -130,7 +130,7 @@ export const SCHEMA_SQL = `
 		extraction_time REAL NOT NULL,
 		temperature     REAL NOT NULL,
 		ratio           TEXT NOT NULL,
-		rating          REAL NOT NULL,
+		rating          REAL,
 		rating2         REAL,
 		aroma           TEXT,
 		flavor          TEXT,

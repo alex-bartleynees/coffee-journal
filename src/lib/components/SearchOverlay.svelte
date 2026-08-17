@@ -90,7 +90,7 @@
 									<span class="method-mark"><MethodIcon method={brew.method} size={22} /></span>
 									<span class="result-copy">
 										<span class="result-title">{bean?.name ?? 'Unknown bean'}</span>
-										<span class="result-meta">{bean?.roaster ?? 'Unknown roaster'} · {methodLabel(journal.methods, brew.method)} · {brew.rating}/10</span>
+										<span class="result-meta">{bean?.roaster ?? 'Unknown roaster'} · {methodLabel(journal.methods, brew.method)} · {brew.rating == null ? 'Not rated' : `${brew.rating}/10`}</span>
 									</span>
 									<Icon name="chevron" size={14} />
 								</button>

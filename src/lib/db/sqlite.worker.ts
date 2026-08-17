@@ -39,6 +39,46 @@ function columnNames(database: Db, table: string): Set<string> {
 	return new Set(rows.map((r) => String(r.name)));
 }
 
+function columnIsNotNull(database: Db, table: string, column: string): boolean {
+	const rows: Record<string, unknown>[] = [];
+	database.exec({ sql: `PRAGMA table_info(${table})`, rowMode: 'object', resultRows: rows });
+	return rows.some((row) => row.name === column && Number(row.notnull) === 1);
+}
+
+/** SQLite cannot remove a NOT NULL constraint in place, so v8 rebuilds brews. */
+function makeBrewRatingNullable(database: Db): void {
+	if (!columnIsNotNull(database, 'brews', 'rating')) return;
+	database.exec({ sql: `
+		BEGIN IMMEDIATE;
+		CREATE TABLE brews_v8 (
+			id TEXT PRIMARY KEY, bean_id TEXT NOT NULL, method TEXT NOT NULL,
+			date TEXT NOT NULL, time TEXT NOT NULL, grinder TEXT NOT NULL, machine TEXT,
+			grind_setting REAL NOT NULL, dose_in REAL NOT NULL, yield_out REAL NOT NULL,
+			extraction_time REAL NOT NULL, temperature REAL NOT NULL, ratio TEXT NOT NULL,
+			rating REAL, rating2 REAL, aroma TEXT, flavor TEXT, body TEXT, finish TEXT,
+			descriptors TEXT DEFAULT '[]', with_milk INTEGER, milk_drink TEXT,
+			cuts_thru_milk INTEGER, buy_again TEXT, best_for TEXT, recipe_notes TEXT,
+			favorite INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL DEFAULT 0,
+			deleted INTEGER NOT NULL DEFAULT 0, dirty INTEGER NOT NULL DEFAULT 0
+		);
+		INSERT INTO brews_v8 (
+			id, bean_id, method, date, time, grinder, machine, grind_setting, dose_in,
+			yield_out, extraction_time, temperature, ratio, rating, rating2, aroma,
+			flavor, body, finish, descriptors, with_milk, milk_drink, cuts_thru_milk,
+			buy_again, best_for, recipe_notes, favorite, updated_at, deleted, dirty
+		)
+		SELECT
+			id, bean_id, method, date, time, grinder, machine, grind_setting, dose_in,
+			yield_out, extraction_time, temperature, ratio, rating, rating2, aroma,
+			flavor, body, finish, descriptors, with_milk, milk_drink, cuts_thru_milk,
+			buy_again, best_for, recipe_notes, favorite, updated_at, deleted, dirty
+		FROM brews;
+		DROP TABLE brews;
+		ALTER TABLE brews_v8 RENAME TO brews;
+		COMMIT;
+	` });
+}
+
 /**
  * Bring a pre-existing OPFS database up to SCHEMA_VERSION. Fresh databases get
  * the sync columns from SCHEMA_SQL directly, so this is a no-op for them;
@@ -61,6 +101,7 @@ function migrate(database: Db): void {
 			database.exec({ sql: `ALTER TABLE brews ADD COLUMN ${col} ${def}` });
 		}
 	}
+	makeBrewRatingNullable(database);
 	const methodColumns = columnNames(database, 'methods');
 	for (const [col, def] of METHOD_MIGRATION_COLUMNS) {
 		if (!methodColumns.has(col)) {

@@ -1,6 +1,8 @@
 import type { Brew, Method, MilkDrink } from '$lib/data/types';
+import type { CalendarDate } from '$lib/data/date';
 
 export interface DraftBrew {
+	quickBrew: boolean;
 	beanId: string;
 	method: Method;
 	withMilk: boolean;
@@ -27,6 +29,7 @@ export interface DraftBrew {
 
 export function createDraft(beanId: string): DraftBrew {
 	return {
+		quickBrew: false,
 		beanId,
 		method: 'espresso',
 		withMilk: false,
@@ -54,6 +57,7 @@ export function createDraft(beanId: string): DraftBrew {
 
 export function draftFromBrew(brew: Brew): DraftBrew {
 	return {
+		quickBrew: brew.rating == null,
 		beanId: brew.beanId,
 		method: brew.method,
 		withMilk: brew.withMilk ?? false,
@@ -71,11 +75,59 @@ export function draftFromBrew(brew: Brew): DraftBrew {
 		body: brew.body ?? '',
 		finish: brew.finish ?? '',
 		descriptors: [...(brew.descriptors ?? [])],
-		rating: brew.rating,
+		rating: brew.rating ?? 7,
 		rating2: brew.rating2 ?? null,
 		cutsThruMilk: brew.cutsThruMilk ?? false,
 		buyAgain: brew.buyAgain ?? null,
 		bestFor: brew.bestFor ?? null
+	};
+}
+
+export const FULL_BREW_STEPS = [
+	{ key: 'bean', label: 'Bean', title: 'What bean?' },
+	{ key: 'brew', label: 'Brew', title: 'Recipe' },
+	{ key: 'taste', label: 'Taste', title: 'How was it?' },
+	{ key: 'verdict', label: 'Verdict', title: 'The verdict' }
+] as const;
+
+export function brewSteps(quickBrew: boolean) {
+	return quickBrew ? FULL_BREW_STEPS.slice(0, 2) : FULL_BREW_STEPS;
+}
+
+export function brewFromDraft(
+	draft: DraftBrew,
+	identity: { id: string; date: CalendarDate; time: string }
+): Brew {
+	const shared = {
+		...draft,
+		...identity,
+		ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',
+		recipeNotes: draft.recipeNotes.trim() || undefined,
+		machine: draft.machine ?? undefined,
+		milkDrink: draft.withMilk ? draft.milkDrink : null
+	};
+	delete (shared as Partial<DraftBrew>).quickBrew;
+
+	if (!draft.quickBrew) {
+		return {
+			...shared,
+			rating: draft.rating,
+			rating2: draft.withMilk ? draft.rating2 : null
+		};
+	}
+
+	return {
+		...shared,
+		rating: null,
+		rating2: null,
+		aroma: undefined,
+		flavor: undefined,
+		body: undefined,
+		finish: undefined,
+		descriptors: [],
+		cutsThruMilk: false,
+		buyAgain: null,
+		bestFor: null
 	};
 }
 

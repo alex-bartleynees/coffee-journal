@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Brew } from '$lib/data/types';
-import { createDraft, draftFromBrew } from './DraftBrew';
+import { calendarDate } from '$lib/data/date';
+import { brewFromDraft, brewSteps, createDraft, draftFromBrew } from './DraftBrew';
 
 describe('milk drink draft state', () => {
 	it('starts without a milk drink', () => {
@@ -21,5 +22,40 @@ describe('milk drink draft state', () => {
 		const draft = draftFromBrew({ withMilk: true } as Brew);
 
 		expect(draft.milkDrink).toBe('Flat White');
+	});
+});
+
+describe('quick brew draft state', () => {
+	it('uses two steps only when quick brew is enabled', () => {
+		expect(brewSteps(false).map((step) => step.key)).toEqual(['bean', 'brew', 'taste', 'verdict']);
+		expect(brewSteps(true).map((step) => step.key)).toEqual(['bean', 'brew']);
+	});
+
+	it('restores an unrated brew in quick mode with a usable verdict default', () => {
+		const draft = draftFromBrew({ rating: null, withMilk: false, descriptors: [] } as unknown as Brew);
+
+		expect(draft.quickBrew).toBe(true);
+		expect(draft.rating).toBe(7);
+	});
+
+	it('saves quick brews without hidden tasting or verdict values', () => {
+		const draft = createDraft('bean-1');
+		Object.assign(draft, {
+			quickBrew: true,
+			aroma: 'Floral',
+			descriptors: ['Berry'],
+			rating: 9,
+			rating2: 8,
+			buyAgain: 'Yes' as const
+		});
+
+		const brew = brewFromDraft(draft, { id: 'brew-1', date: calendarDate('2026-08-18'), time: '08:00' });
+
+		expect(brew.rating).toBeNull();
+		expect(brew.rating2).toBeNull();
+		expect(brew.aroma).toBeUndefined();
+		expect(brew.descriptors).toEqual([]);
+		expect(brew.buyAgain).toBeNull();
+		expect('quickBrew' in brew).toBe(false);
 	});
 });

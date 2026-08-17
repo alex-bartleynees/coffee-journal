@@ -4,12 +4,12 @@
 	import type { CalendarDate } from '$lib/data/date';
 	import type { Bean, Brew } from '$lib/data/types';
 	import { beanInventory } from '$lib/data/bean-inventory';
+	import { averageRating, bestRating } from '$lib/data/ratings';
 
 	let { bean, beanBrews }: { bean: Bean; beanBrews: Brew[] } = $props();
 
-	const avg = $derived(
-		beanBrews.length ? (beanBrews.reduce((s, b) => s + b.rating, 0) / beanBrews.length).toFixed(1) : '—'
-	);
+	const avg = $derived(averageRating(beanBrews));
+	const best = $derived(bestRating(beanBrews));
 	const totalGrams = $derived(beanBrews.reduce((s, b) => s + b.doseIn, 0));
 	const cost = $derived(bean.pricePerKg * (bean.bagWeight / 1000));
 	const inventory = $derived(beanInventory(bean.bagWeight, beanBrews.map((brew) => brew.doseIn)));
@@ -78,11 +78,11 @@
 		</div>
 		<div class="mini-stat">
 			<div class="mini-label">Avg score</div>
-			<div class="mini-value serif">{avg}</div>
+			<div class="mini-value serif">{avg == null ? '—' : avg.toFixed(1)}</div>
 		</div>
 		<div class="mini-stat">
 			<div class="mini-label">Best</div>
-			<div class="mini-value serif">{beanBrews.length ? Math.max(...beanBrews.map((b) => b.rating)) : '—'}</div>
+			<div class="mini-value serif">{best ?? '—'}</div>
 		</div>
 	</div>
 
@@ -96,8 +96,11 @@
 					<div class="history-recipe mono">{brew.doseIn}g → {brew.yieldOut}g · {brew.ratio}</div>
 				</div>
 				<div class="history-rating">
-					<span class="history-rating-num">{brew.rating}</span>
-					<span class="history-rating-denom">/10</span>
+					{#if brew.rating == null}
+						<span class="history-rating-denom">Not rated</span>
+					{:else}
+						<span class="history-rating-num">{brew.rating}</span><span class="history-rating-denom">/10</span>
+					{/if}
 				</div>
 			</a>
 		{/each}

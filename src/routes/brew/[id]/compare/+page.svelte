@@ -4,6 +4,7 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import { beanById, formatExtractionTime } from '$lib/data/sample';
 	import { methodLabel } from '$lib/data/methods';
+	import { ratingLabel } from '$lib/data/ratings';
 
 	const beans = $derived(beanById(journal.beans));
 	const a = $derived(journal.brews.find((b) => b.id === page.params.id));
@@ -24,7 +25,7 @@
 					{ label: 'Ratio', a: a.ratio, b: b.ratio },
 					{ label: 'Time', a: formatExtractionTime(a.extractionTime), b: formatExtractionTime(b.extractionTime) },
 					{ label: 'Temp', a: `${a.temperature}°C`, b: `${b.temperature}°C` },
-					{ label: 'Rating', a: `${a.rating}/10`, b: `${b.rating}/10`, highlight: true }
+					{ label: 'Rating', a: ratingLabel(a.rating), b: ratingLabel(b.rating), highlight: true }
 				]
 			: []
 	);

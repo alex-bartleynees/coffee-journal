@@ -7,6 +7,7 @@
   import { journal } from "$lib/stores/journal.svelte";
   import { parseIsoDate } from "$lib/data/date";
   import type { CalendarDate } from "$lib/data/date";
+  import { ratingLabel } from "$lib/data/ratings";
 
   let {
     brew,
@@ -23,6 +24,10 @@
     prevBrew?: Brew;
     prevBean?: Bean;
   } = $props();
+
+  const hasTasting = $derived(
+    Boolean(brew.descriptors?.length || brew.aroma || brew.flavor || brew.body || brew.finish),
+  );
 
   function dateStr(d: CalendarDate) {
     return parseIsoDate(d).toLocaleDateString(undefined, {
@@ -45,23 +50,30 @@
       <span>{bean.origin}</span>
     </div>
 
-    <div class="rating-block">
-      <div class="rating-col">
-        <div class="rating-label">{brew.withMilk ? "Straight" : "Rating"}</div>
-        <div class="rating-value">
-          {brew.rating}<span class="rating-denom">/ 10</span>
-        </div>
-        <div style="margin-top:4px"><StarRow value={brew.rating} /></div>
-      </div>
-      {#if brew.rating2 != null}
-        <div class="rating-sep"></div>
+    <div class="rating-block" class:unrated={brew.rating == null}>
+      {#if brew.rating == null}
         <div class="rating-col">
-          <div class="rating-label"><Icon name="milk" size={11} /> {brew.milkDrink ?? 'In milk'}</div>
-          <div class="rating-value">
-            {brew.rating2}<span class="rating-denom">/ 10</span>
-          </div>
-          <div style="margin-top:4px"><StarRow value={brew.rating2} /></div>
+          <div class="rating-label">Quick brew</div>
+          <div class="rating-value unrated-value">Not rated</div>
         </div>
+      {:else}
+        <div class="rating-col">
+          <div class="rating-label">{brew.withMilk ? "Straight" : "Rating"}</div>
+          <div class="rating-value">
+            {brew.rating}<span class="rating-denom">/ 10</span>
+          </div>
+          <div style="margin-top:4px"><StarRow value={brew.rating} /></div>
+        </div>
+        {#if brew.rating2 != null}
+          <div class="rating-sep"></div>
+          <div class="rating-col">
+            <div class="rating-label"><Icon name="milk" size={11} /> {brew.milkDrink ?? 'In milk'}</div>
+            <div class="rating-value">
+              {brew.rating2}<span class="rating-denom">/ 10</span>
+            </div>
+            <div style="margin-top:4px"><StarRow value={brew.rating2} /></div>
+          </div>
+        {/if}
       {/if}
     </div>
   </div>
@@ -117,8 +129,9 @@
     <div class="recipe-notes">{brew.recipeNotes}</div>
   {/if}
 
-  <div class="section-label">Tasting</div>
-  <div class="tasting-card">
+  {#if hasTasting}
+    <div class="section-label">Tasting</div>
+    <div class="tasting-card">
     {#if brew.descriptors?.length}
       <div class="descriptors">
         {#each brew.descriptors as d (d)}
@@ -134,14 +147,15 @@
         </div>
       {/if}
     {/each}
-  </div>
+    </div>
+  {/if}
 
   {#if prevBrew && prevBean}
     <a class="compare-hint" href="/brew/{brew.id}/compare">
       <div>
         <div class="compare-hint-label">Compare to last brew</div>
         <div class="compare-hint-value">
-          {prevBean.name} · {prevBrew.rating}/10
+          {prevBean.name} · {ratingLabel(prevBrew.rating)}
         </div>
       </div>
       <Icon name="chevron" size={16} />
@@ -193,6 +207,13 @@
     display: flex;
     align-items: center;
     gap: 16px;
+  }
+  .rating-block.unrated {
+    justify-content: flex-start;
+  }
+  .unrated-value {
+    font-size: 24px;
+    letter-spacing: -0.3px;
   }
   .rating-col {
     flex: 1;

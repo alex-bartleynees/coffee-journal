@@ -4,22 +4,19 @@
 	import { page } from '$app/state';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
-	import { createDraft, draftFromBrew, loadDraft, saveDraft, clearDraft } from '$lib/components/new-brew/DraftBrew';
+	import { brewFromDraft, brewSteps, createDraft, draftFromBrew, loadDraft, saveDraft, clearDraft } from '$lib/components/new-brew/DraftBrew';
 	import { newId } from '$lib/data/id';
 	import { todayIso } from '$lib/data/date';
 	import BeanStep from '$lib/components/new-brew/BeanStep.svelte';
 	import BrewStep from '$lib/components/new-brew/BrewStep.svelte';
 	import TasteStep from '$lib/components/new-brew/TasteStep.svelte';
 	import VerdictStep from '$lib/components/new-brew/VerdictStep.svelte';
-	import type { Brew } from '$lib/data/types';
-
-	const TABS = ['Bean', 'Brew', 'Taste', 'Verdict'];
-	const TITLES = ['What bean?', 'Recipe', 'How was it?', 'The verdict'];
 	const editId = $derived(page.url.searchParams.get('edit'));
 	const existingBrew = $derived(editId ? journal.brews.find((brew) => brew.id === editId) : undefined);
 
 	let tab = $state(0);
 	const draft = $state(createDraft(journal.beans[0]?.id ?? ''));
+	const steps = $derived(brewSteps(draft.quickBrew));
 	let initializedEditId: string | null = null;
 
 	// Restore an in-progress draft (if any) only after mount, so server/client
@@ -40,6 +37,10 @@
 		Object.assign(draft, draftFromBrew(existingBrew));
 		tab = 0;
 		initializedEditId = editId;
+	});
+
+	$effect(() => {
+		if (tab >= steps.length) tab = steps.length - 1;
 	});
 
 	$effect(() => {
@@ -65,17 +66,11 @@
 
 	function save() {
 		if (editId && !existingBrew) return;
-		const brew: Brew = {
-			...draft,
+		const brew = brewFromDraft(draft, {
 			id: existingBrew?.id ?? newId('br'),
 			date: existingBrew?.date ?? todayIso(),
-			time: existingBrew?.time ?? new Date().toTimeString().slice(0, 5),
-			ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',
-			recipeNotes: draft.recipeNotes.trim() || undefined,
-			machine: draft.machine ?? undefined,
-			rating2: draft.withMilk ? draft.rating2 : null,
-			milkDrink: draft.withMilk ? draft.milkDrink : null
-		};
+			time: existingBrew?.time ?? new Date().toTimeString().slice(0, 5)
+		});
 		if (existingBrew) journal.updateBrew(brew);
 		else {
 			journal.addBrew(brew);
@@ -104,16 +99,16 @@
 <div class="new-brew">
 	<div class="nb-header">
 		<button class="icon-btn" onclick={close} aria-label="Close"><Icon name="close" size={18} /></button>
-		<div class="nb-step-count">{editId ? 'Edit brew · ' : ''}Step {tab + 1} / 4</div>
+		<div class="nb-step-count">{editId ? 'Edit brew · ' : ''}Step {tab + 1} / {steps.length}</div>
 		<button class="nb-save" onclick={save}>Save</button>
 	</div>
 
 	<div class="nb-title">
-		<h1>{TITLES[tab]}</h1>
+		<h1>{steps[tab].title}</h1>
 	</div>
 
 	<div class="tabs">
-		{#each TABS as t, i (t)}
+		{#each steps as step, i (step.key)}
 			<button class="tab" class:active={tab === i} class:done={tab > i} onclick={() => (tab = i)}>
 				<span class="tab-badge">
 					{#if tab > i}
@@ -122,7 +117,7 @@
 						{i + 1}
 					{/if}
 				</span>
-				<span class="tab-label">{t}</span>
+				<span class="tab-label">{step.label}</span>
 			</button>
 		{/each}
 	</div>
@@ -153,7 +148,7 @@
 		{/if}
 		<div class="nb-footer-right">
 			<button class="btn btn-ghost nb-cancel" onclick={close}>Cancel</button>
-			{#if tab < 3}
+			{#if tab < steps.length - 1}
 				<button class="btn btn-primary nb-continue" onclick={() => (tab += 1)}>
 					Continue
 					<Icon name="chevron" size={16} />

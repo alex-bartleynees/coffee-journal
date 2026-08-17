@@ -3,6 +3,7 @@
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import type { Bean, Brew, Machine, MethodDef } from '$lib/data/types';
+	import { averageRating } from '$lib/data/ratings';
 
 	let {
 		method,
@@ -24,9 +25,7 @@
 		return counts;
 	});
 
-	const avgRating = $derived(
-		myBrews.length ? myBrews.reduce((s, b) => s + b.rating, 0) / myBrews.length : null
-	);
+	const avgRating = $derived(averageRating(myBrews));
 </script>
 
 <div class="method-detail">
@@ -38,9 +37,7 @@
 	</div>
 
 		<h2 class="hero-name">{method.label}</h2>
-		{#if avgRating != null}
-			<div class="hero-sub">★ {avgRating.toFixed(1)} avg · {myBrews.length} brews</div>
-		{/if}
+		<div class="hero-sub">{avgRating == null ? `${myBrews.length} brews` : `★ ${avgRating.toFixed(1)} avg · ${myBrews.length} brews`}</div>
 	</div>
 
 	{#if method.notes}
@@ -72,7 +69,7 @@
 					<div class="log-name">{bean?.name}</div>
 					<div class="log-sub">{br.date}</div>
 				</div>
-				<div class="log-rating">★ {br.rating}</div>
+				<div class="log-rating">{br.rating == null ? 'Not rated' : `★ ${br.rating}`}</div>
 			</a>
 		{:else}
 			<div class="log-empty">No brews logged yet</div>

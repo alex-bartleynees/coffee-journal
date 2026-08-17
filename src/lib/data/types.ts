@@ -78,7 +78,8 @@ export interface Brew {
 	temperature: number;
 	ratio: string;
 	recipeNotes?: string;
-	rating: number;
+	/** Null when the brew was logged without a tasting verdict (Quick brew). */
+	rating: number | null;
 	rating2?: number | null;
 	aroma?: string;
 	flavor?: string;
