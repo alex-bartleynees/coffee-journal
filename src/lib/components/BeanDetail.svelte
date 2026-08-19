@@ -7,7 +7,11 @@
 	import { averageRating, bestRating } from '$lib/data/ratings';
 	import { formatDecimal, formatRatio } from '$lib/data/numbers';
 
-	let { bean, beanBrews }: { bean: Bean; beanBrews: Brew[] } = $props();
+	let {
+		bean,
+		beanBrews,
+		onFinish
+	}: { bean: Bean; beanBrews: Brew[]; onFinish: () => void } = $props();
 
 	const avg = $derived(averageRating(beanBrews));
 	const best = $derived(bestRating(beanBrews));
@@ -69,6 +73,11 @@
 				<div class="mini-value">{beanBrews.length ? Math.floor(remaining / avgGramsPerBrew) : '—'}</div>
 			</div>
 		</div>
+		{#if bean.finished}
+			<div class="bag-finished" role="status">Bag finished</div>
+		{:else}
+			<button class="finish-bag btn btn-ghost" type="button" onclick={onFinish}>Finish bag</button>
+		{/if}
 	</div>
 
 	<div class="section-label">Performance</div>
@@ -233,6 +242,21 @@
 		margin-top: 16px;
 		padding-top: 14px;
 		border-top: 1px solid var(--line-soft);
+	}
+	.finish-bag,
+	.bag-finished {
+		width: 100%;
+		margin-top: 14px;
+	}
+	.bag-finished {
+		padding-top: 14px;
+		border-top: 1px solid var(--line-soft);
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.8px;
+		text-align: center;
+		text-transform: uppercase;
+		color: var(--ink-3);
 	}
 	.mini-label {
 		font-size: 9.5px;

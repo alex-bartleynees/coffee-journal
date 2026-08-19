@@ -169,6 +169,12 @@ function updateBean(updated: Bean): void {
 	sync.schedule();
 }
 
+function finishBean(id: string): void {
+	const bean = beans.find((candidate) => candidate.id === id);
+	if (!bean || bean.finished) return;
+	updateBean({ ...bean, finished: true });
+}
+
 function updateGrinder(updated: Grinder): void {
 	if (!grinders.some((grinder) => grinder.id === updated.id)) {
 		console.error(`Cannot update missing grinder ${updated.id}`);
@@ -311,6 +317,7 @@ export const journal = {
 	addRecipe,
 	updateBrew,
 	updateBean,
+	finishBean,
 	updateGrinder,
 	updateMachine,
 	updateMethod,

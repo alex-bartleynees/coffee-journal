@@ -7,6 +7,12 @@
 
 	const bean = $derived(journal.beans.find((b) => b.id === page.params.id));
 	const beanBrews = $derived(journal.brews.filter((b) => b.beanId === page.params.id));
+
+	function finishBag() {
+		if (bean && window.confirm('Mark this bag as finished? It will no longer appear as an active bean.')) {
+			journal.finishBean(bean.id);
+		}
+	}
 </script>
 
 {#if bean}
@@ -17,7 +23,7 @@
 			{/snippet}
 		</BackHeader>
 
-		<BeanDetail {bean} {beanBrews} />
+		<BeanDetail {bean} {beanBrews} onFinish={finishBag} />
 	</div>
 {:else}
 	<div class="screen">

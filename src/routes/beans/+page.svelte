@@ -57,6 +57,12 @@
 			selectedBeanId = id;
 		}
 	}
+
+	function finishSelectedBag() {
+		if (selectedBean && window.confirm('Mark this bag as finished? It will no longer appear as an active bean.')) {
+			journal.finishBean(selectedBean.id);
+		}
+	}
 </script>
 
 <div class="beans-shell">
@@ -122,7 +128,7 @@
 			<div class="desktop-detail-actions">
 				<DetailActionMenu editHref={`/beans/new?edit=${selectedBean.id}`} label="Bean actions" />
 			</div>
-			<BeanDetail bean={selectedBean} beanBrews={selectedBeanBrews} />
+			<BeanDetail bean={selectedBean} beanBrews={selectedBeanBrews} onFinish={finishSelectedBag} />
 		</div>
 	{/if}
 </div>
