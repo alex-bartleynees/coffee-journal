@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '$lib/icons/Icon.svelte';
 	import type { Recipe } from '$lib/data/types';
+	import { guidedMilestones } from '$lib/data/recipes';
 
 	interface Props {
 		recipe: Recipe;
@@ -12,7 +13,7 @@
 	let { recipe, seconds, onChange, onClose }: Props = $props();
 	let running = $state(false);
 
-	const orderedSteps = $derived([...recipe.steps].sort((a, b) => a.time - b.time));
+	const orderedSteps = $derived(guidedMilestones(recipe));
 	const currentIndex = $derived(Math.max(0, orderedSteps.findLastIndex((step) => step.time <= seconds)));
 	const current = $derived(orderedSteps[currentIndex]);
 	const next = $derived(orderedSteps.find((step) => step.time > seconds));
@@ -46,7 +47,7 @@
 			<div class="clock mono">{formatTime(seconds)}</div>
 			<div class="now">Now</div>
 			<div class="current" aria-live="polite">{current?.label ?? 'Ready'}</div>
-			<div class="next">{next ? `Next: ${next.label} at ${formatTime(next.time)}` : 'Final step'}</div>
+			<div class="next">{next ? `Next: ${next.label} at ${formatTime(next.time)}` : 'Brew complete'}</div>
 			<div class="controls">
 				<button class="reset" type="button" aria-label="Reset" onclick={reset}><Icon name="reset" size={18} /></button>
 				<button class="run" type="button" aria-label={running ? 'Pause' : 'Start'} onclick={() => (running = !running)}><Icon name={running ? 'pause' : 'play'} size={20} /></button>

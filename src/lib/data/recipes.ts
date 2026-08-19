@@ -15,6 +15,7 @@ export function validateRecipeSteps(steps: RecipeStep[], targetTime: number): st
 		const step = steps[index];
 		if (!step?.label.trim()) return 'Every step needs a label.';
 		if (!Number.isFinite(step.time) || step.time < 0) return 'Step times must be zero or greater.';
+		if (step.time > targetTime) return 'Step times cannot be later than the target time.';
 		if (index > 0 && step.time <= steps[index - 1]!.time) return 'Step times must increase.';
 		if (step.water != null) {
 			if (!Number.isFinite(step.water) || step.water < 0) return 'Water targets must be zero or greater.';
@@ -22,8 +23,13 @@ export function validateRecipeSteps(steps: RecipeStep[], targetTime: number): st
 			if (previousWater != null && step.water < previousWater) return 'Water targets must not decrease.';
 		}
 	}
-	if (steps.at(-1)?.time !== targetTime) return 'The final step time must match the target time.';
 	return null;
+}
+
+export function guidedMilestones(recipe: Pick<Recipe, 'steps' | 'targetTime'>): RecipeStep[] {
+	const steps = [...recipe.steps].sort((a, b) => a.time - b.time);
+	if (steps.at(-1)?.time === recipe.targetTime) return steps;
+	return [...steps, { id: `finish-${recipe.targetTime}`, label: 'Finish', time: recipe.targetTime }];
 }
 
 export function recipeRatio(recipe: Pick<Recipe, 'doseIn' | 'yieldOut'>): string {
