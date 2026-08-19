@@ -1,5 +1,6 @@
 import type { Bean, Brew, Grinder, Machine, MethodDef } from './types';
 import { calendarDate } from './date';
+export { formatExtractionTime } from './numbers';
 
 export const SAMPLE_BEANS: Bean[] = [
 	{
@@ -288,10 +289,4 @@ export function grinderById(grinders: Grinder[]): Record<string, Grinder> {
 
 export function machineById(machines: Machine[]): Record<string, Machine> {
 	return Object.fromEntries(machines.map((m) => [m.id, m]));
-}
-
-export function formatExtractionTime(seconds: number): string {
-	const m = Math.floor(seconds / 60);
-	const s = Math.round(seconds % 60);
-	return `${m}:${String(s).padStart(2, '0')}`;
 }

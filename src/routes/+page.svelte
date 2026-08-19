@@ -9,7 +9,7 @@
   import { beanById } from "$lib/data/sample";
   import { methodLabel } from "$lib/data/methods";
   import { averageRating } from "$lib/data/ratings";
-  import { formatDecimal, formatRatio } from "$lib/data/numbers";
+  import { formatDecimal, formatExtractionTime, formatRatio } from "$lib/data/numbers";
   import {
     calendarDate,
     todayIso,
@@ -202,11 +202,7 @@
                   {:else}
                     <span class="stat">{formatDecimal(brew.doseIn)}g · {formatRatio(brew.ratio)}</span>
                     <span class="dot"></span>
-                    <span class="stat"
-                      >{Math.floor(brew.extractionTime / 60)}:{String(
-                        brew.extractionTime % 60,
-                      ).padStart(2, "0")}</span
-                    >
+                    <span class="stat">{formatExtractionTime(brew.extractionTime)}</span>
                   {/if}
                 </div>
               </div>
