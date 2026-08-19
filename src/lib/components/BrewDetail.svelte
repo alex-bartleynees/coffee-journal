@@ -28,6 +28,7 @@
   const hasTasting = $derived(
     Boolean(brew.descriptors?.length || brew.aroma || brew.flavor || brew.body || brew.finish),
   );
+  const sourceRecipe = $derived(brew.recipeId ? journal.recipes.find((recipe) => recipe.id === brew.recipeId) : undefined);
 
   function dateStr(d: CalendarDate) {
     return parseIsoDate(d).toLocaleDateString(undefined, {
@@ -79,6 +80,14 @@
   </div>
 
   <div class="section-label">Recipe</div>
+  {#if sourceRecipe}
+    <a class="source-recipe" href={`/methods/${sourceRecipe.methodId}/recipes/new?edit=${sourceRecipe.id}`}>
+      <span><small>Recipe used</small><strong>{sourceRecipe.name}</strong></span>
+      <Icon name="chevron" size={16} />
+    </a>
+  {:else if brew.recipeId}
+    <div class="source-recipe missing"><span><small>Recipe used</small><strong>Deleted recipe</strong></span></div>
+  {/if}
   <div class="recipe-grid">
     <div class="recipe-cell">
       <div class="recipe-label">Dose</div>
@@ -164,6 +173,11 @@
 </div>
 
 <style>
+	.source-recipe { margin: 0 16px 10px; padding: 12px 14px; border: 1px solid var(--line-soft); border-radius: var(--r-md); background: var(--card); display: flex; align-items: center; gap: 10px; }
+	.source-recipe > span { flex: 1; display: flex; flex-direction: column; }
+	.source-recipe small { color: var(--ink-3); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+	.source-recipe strong { font-family: var(--serif); font-size: 15px; }
+	.source-recipe.missing { color: var(--ink-3); }
   .hero {
     padding: 24px 24px 8px;
   }

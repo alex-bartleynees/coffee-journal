@@ -1,5 +1,5 @@
 import { SAMPLE_BEANS, SAMPLE_BREWS, SAMPLE_GRINDERS, SAMPLE_MACHINES, SAMPLE_METHODS } from '$lib/data/sample';
-import type { Bean, Brew, Grinder, Machine, MethodDef } from '$lib/data/types';
+import type { Bean, Brew, Grinder, Machine, MethodDef, Recipe } from '$lib/data/types';
 import { openDb, exec, query, isPersistent } from '$lib/db/index';
 import {
 	getAllBeans,
@@ -7,6 +7,7 @@ import {
 	getAllGrinders,
 	getAllMachines,
 	getAllMethods,
+	getAllRecipes,
 	upsertBeanPhoto,
 	deleteBeanPhoto,
 	insertBean,
@@ -14,11 +15,13 @@ import {
 	insertGrinder,
 	insertMachine,
 	insertMethod,
+	insertRecipe,
 	softDeleteBean,
 	softDeleteBrew,
 	softDeleteGrinder,
 	softDeleteMachine,
-	softDeleteMethod
+	softDeleteMethod,
+	softDeleteRecipe
 } from '$lib/db/queries';
 import { sync } from '$lib/sync/engine.svelte';
 import { ensureDefaultMethods } from '$lib/db/default-methods';
@@ -29,6 +32,7 @@ let brews = $state<Brew[]>([]);
 let grinders = $state<Grinder[]>([]);
 let machines = $state<Machine[]>([]);
 let methods = $state<MethodDef[]>([]);
+let recipes = $state<Recipe[]>([]);
 let ready = $state(false);
 let persistent = $state(false);
 let error = $state<string | null>(null);
@@ -85,6 +89,7 @@ async function init(): Promise<void> {
 		grinders = await getAllGrinders();
 		machines = await getAllMachines();
 		methods = await getAllMethods();
+		recipes = await getAllRecipes();
 	} catch (e) {
 		error = e instanceof Error ? e.message : String(e);
 		console.error('Database initialization failed', e);
@@ -101,6 +106,7 @@ async function reload(): Promise<void> {
 	grinders = await getAllGrinders();
 	machines = await getAllMachines();
 	methods = await getAllMethods();
+	recipes = await getAllRecipes();
 }
 
 function addBrew(brew: Brew): void {
@@ -221,6 +227,30 @@ function deleteMethod(id: string): void {
 	sync.schedule();
 }
 
+function addRecipe(recipe: Recipe): void {
+	recipes = [...recipes, recipe].sort((a, b) => a.name.localeCompare(b.name));
+	insertRecipe(recipe).catch(console.error);
+	sync.schedule();
+}
+
+function updateRecipe(updated: Recipe): void {
+	if (!recipes.some((recipe) => recipe.id === updated.id)) {
+		console.error(`Cannot update missing recipe ${updated.id}`);
+		return;
+	}
+	recipes = recipes
+		.map((recipe) => (recipe.id === updated.id ? updated : recipe))
+		.sort((a, b) => a.name.localeCompare(b.name));
+	insertRecipe(updated).catch(console.error);
+	sync.schedule();
+}
+
+function deleteRecipe(id: string): void {
+	recipes = recipes.filter((recipe) => recipe.id !== id);
+	softDeleteRecipe(id).catch(console.error);
+	sync.schedule();
+}
+
 function deleteBrew(id: string): void {
 	const brew = brews.find((b) => b.id === id);
 	brews = brews.filter((b) => b.id !== id);
@@ -267,6 +297,7 @@ export const journal = {
 	get grinders() { return grinders; },
 	get machines() { return machines; },
 	get methods() { return methods; },
+	get recipes() { return recipes; },
 	get ready() { return ready; },
 	get persistent() { return persistent; },
 	get error() { return error; },
@@ -277,16 +308,19 @@ export const journal = {
 	addGrinder,
 	addMachine,
 	addMethod,
+	addRecipe,
 	updateBrew,
 	updateBean,
 	updateGrinder,
 	updateMachine,
 	updateMethod,
+	updateRecipe,
 	deleteBrew,
 	deleteBean,
 	saveBeanPhoto,
 	removeBeanPhoto,
 	deleteGrinder,
 	deleteMachine,
-	deleteMethod
+	deleteMethod,
+	deleteRecipe
 };

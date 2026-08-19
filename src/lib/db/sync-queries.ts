@@ -5,20 +5,23 @@ import {
 	grinderFromRow,
 	machineFromRow,
 	methodFromRow,
+	recipeFromRow,
 	insertBean,
 	insertBrew,
 	insertGrinder,
 	insertMachine,
 	insertMethod,
+	insertRecipe,
 	type BeanRow,
 	type BrewRow,
 	type GrinderRow,
 	type MachineRow,
 	type MethodRow,
+	type RecipeRow,
 	type PresetRow
 } from './queries';
 import { SYNCABLE_TABLES } from './schema';
-import type { Bean, Brew, Grinder, Machine, MethodDef } from '$lib/data/types';
+import type { Bean, Brew, Grinder, Machine, MethodDef, Recipe } from '$lib/data/types';
 import type { Entity, SyncRecord } from '$lib/sync/protocol';
 
 /**
@@ -28,7 +31,7 @@ import type { Entity, SyncRecord } from '$lib/sync/protocol';
  */
 
 const TABLE: Record<Entity, string> = {
-	bean: 'beans', grinder: 'grinders', brew: 'brews', machine: 'machines', method: 'methods'
+	bean: 'beans', grinder: 'grinders', brew: 'brews', machine: 'machines', method: 'methods', recipe: 'recipes'
 };
 
 type MetaRow = { value: string };
@@ -80,6 +83,14 @@ export async function getDirtyRecords(): Promise<SyncRecord[]> {
 		});
 	}
 
+	const recipes = await query<RecipeRow & SyncFlagsRow>('SELECT * FROM recipes WHERE dirty = 1');
+	for (const r of recipes) {
+		records.push({
+			entity: 'recipe', id: r.id, updatedAt: r.updated_at,
+			deleted: !!r.deleted, payload: recipeFromRow(r)
+		});
+	}
+
 	return records;
 }
 
@@ -125,6 +136,7 @@ export async function applyRemoteRecord(rec: SyncRecord): Promise<boolean> {
 	else if (rec.entity === 'grinder') await insertGrinder(rec.payload as Grinder, meta);
 	else if (rec.entity === 'machine') await insertMachine(rec.payload as Machine, meta);
 	else if (rec.entity === 'method') await insertMethod(rec.payload as MethodDef, meta);
+	else if (rec.entity === 'recipe') await insertRecipe(rec.payload as Recipe, meta);
 	else await insertBrew(rec.payload as Brew, meta);
 	return true;
 }

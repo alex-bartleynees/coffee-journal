@@ -3,6 +3,7 @@ import type { CalendarDate } from '$lib/data/date';
 
 export interface DraftBrew {
 	quickBrew: boolean;
+	recipeId: string | null;
 	beanId: string;
 	method: Method;
 	withMilk: boolean;
@@ -30,6 +31,7 @@ export interface DraftBrew {
 export function createDraft(beanId: string): DraftBrew {
 	return {
 		quickBrew: false,
+		recipeId: null,
 		beanId,
 		method: 'espresso',
 		withMilk: false,
@@ -58,6 +60,7 @@ export function createDraft(beanId: string): DraftBrew {
 export function draftFromBrew(brew: Brew): DraftBrew {
 	return {
 		quickBrew: brew.rating == null,
+		recipeId: brew.recipeId ?? null,
 		beanId: brew.beanId,
 		method: brew.method,
 		withMilk: brew.withMilk ?? false,
@@ -103,6 +106,7 @@ export function brewFromDraft(
 		...identity,
 		ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',
 		recipeNotes: draft.recipeNotes.trim() || undefined,
+		recipeId: draft.recipeId ?? undefined,
 		machine: draft.machine ?? undefined,
 		milkDrink: draft.withMilk ? draft.milkDrink : null
 	};

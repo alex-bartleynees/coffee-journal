@@ -24,6 +24,13 @@
 	const selectedMethodBrews = $derived(
 		selectedMethod ? brews.filter((b) => b.method === selectedMethod.id) : []
 	);
+	const selectedMethodRecipes = $derived(
+		selectedMethod ? journal.recipes.filter((recipe) => recipe.methodId === selectedMethod.id) : []
+	);
+
+	function deleteRecipe(id: string) {
+		if (confirm('Delete this recipe? Saved brews will keep their recorded measurements.')) journal.deleteRecipe(id);
+	}
 
 	function onMethodCardClick(e: MouseEvent, id: string) {
 		if (window.matchMedia('(min-width: 860px)').matches) {
@@ -79,6 +86,8 @@
 				method={selectedMethod}
 				machines={selectedMethodMachines}
 				myBrews={selectedMethodBrews}
+				recipes={selectedMethodRecipes}
+				onDeleteRecipe={deleteRecipe}
 				beanById={beans}
 			/>
 		</div>

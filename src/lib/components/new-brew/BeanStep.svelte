@@ -1,7 +1,8 @@
 <script lang="ts">
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
-	import { MILK_DRINKS, type Bean, type Machine, type MethodDef, type MilkDrink } from '$lib/data/types';
+	import { MILK_DRINKS, type Bean, type Machine, type MethodDef, type MilkDrink, type Recipe } from '$lib/data/types';
+	import { compatibleRecipes } from '$lib/data/recipes';
 	import type { DraftBrew } from './DraftBrew';
 
 	interface Props {
@@ -9,15 +10,17 @@
 		beans: Bean[];
 		methods: MethodDef[];
 		machines: Machine[];
+		recipes: Recipe[];
 		includeBeanId?: string;
 	}
 
-	let { draft, beans, methods, machines, includeBeanId }: Props = $props();
+	let { draft, beans, methods, machines, recipes, includeBeanId }: Props = $props();
 
 	const roastColor: Record<string, string> = { light: '#C9A57B', medium: '#8E5A3B', dark: '#4A2C1F' };
 
 	const selectedBean = $derived(beans.find((b) => b.id === draft.beanId));
 	const methodMachines = $derived(machines.filter((m) => m.method === draft.method));
+	const availableRecipes = $derived(compatibleRecipes(recipes, draft.method, draft.beanId));
 
 	function selectMilkDrink(drink: MilkDrink) {
 		const selected = draft.withMilk && draft.milkDrink === drink;
@@ -31,6 +34,21 @@
 		if (draft.machine && methodMachines.some((m) => m.id === draft.machine)) return;
 		draft.machine = methodMachines[0]?.id ?? null;
 	});
+
+	$effect(() => {
+		if (!draft.recipeId) return;
+		if (availableRecipes.some((recipe) => recipe.id === draft.recipeId)) return;
+		draft.recipeId = null;
+	});
+
+	function selectRecipe(recipe: Recipe) {
+		draft.recipeId = recipe.id;
+		draft.doseIn = recipe.doseIn;
+		draft.yieldOut = recipe.yieldOut;
+		draft.temperature = recipe.temperature;
+		draft.extractionTime = 0;
+		if (recipe.notes) draft.recipeNotes = recipe.notes;
+	}
 </script>
 
 <div class="step">
@@ -109,6 +127,14 @@
 				{/each}
 			</div>
 		{/if}
+
+		<div class="section-label">Recipe (optional)</div>
+		<div class="chip-group recipe-chips">
+			<button class="chip" class:active={!draft.recipeId} onclick={() => (draft.recipeId = null)}>Manual</button>
+			{#each availableRecipes as recipe (recipe.id)}
+				<button class="chip" class:active={draft.recipeId === recipe.id} onclick={() => selectRecipe(recipe)}>{recipe.name}</button>
+			{/each}
+		</div>
 
 		{#if selectedBean}
 			<div class="selected-bean-card">

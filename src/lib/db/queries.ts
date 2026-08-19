@@ -1,6 +1,6 @@
 import { exec, query } from './index';
 import { calendarDate } from '$lib/data/date';
-import type { Bean, Brew, Grinder, Machine, Method, MethodDef } from '$lib/data/types';
+import type { Bean, Brew, Grinder, Machine, Method, MethodDef, Recipe, RecipeStep } from '$lib/data/types';
 import type { IconName } from '$lib/icons/Icon.svelte';
 
 /**
@@ -30,7 +30,7 @@ export type BrewRow = {
 	body: string | null; finish: string | null; descriptors: string | null;
 	with_milk: number | null; cuts_thru_milk: number | null;
 	milk_drink: string | null;
-	buy_again: string | null; best_for: string | null; recipe_notes: string | null;
+	buy_again: string | null; best_for: string | null; recipe_notes: string | null; recipe_id: string | null;
 	favorite: number;
 };
 
@@ -44,6 +44,11 @@ export type MachineRow = {
 	id: string; name: string; maker: string; type: string; method: string | null; notes: string | null;
 };
 export type MethodRow = { id: string; label: string; icon: string; notes: string | null };
+export type RecipeRow = {
+	id: string; method_id: string; name: string; bean_id: string | null;
+	dose_in: number; yield_out: number; temperature: number; grind: string | null;
+	target_time: number; notes: string | null; steps: string;
+};
 export type BeanPhotoRow = { bean_id: string; mime_type: string; image_data: Uint8Array | null; updated_at: number; deleted: number; dirty: number };
 
 const photoUrls = new Map<string, { updatedAt: number; url: string }>();
@@ -91,6 +96,7 @@ export function brewFromRow(r: BrewRow): Brew {
 	brew.buyAgain = (r.buy_again as Brew['buyAgain']) ?? null;
 	brew.bestFor = (r.best_for as Brew['bestFor']) ?? null;
 	if (r.recipe_notes != null) brew.recipeNotes = r.recipe_notes;
+	if (r.recipe_id != null) brew.recipeId = r.recipe_id;
 	brew.favorite = !!r.favorite;
 	return brew;
 }
@@ -118,6 +124,33 @@ export function methodFromRow(r: MethodRow): MethodDef {
 	const method: MethodDef = { id: r.id, label: r.label, icon: r.icon as IconName };
 	if (r.notes != null) method.notes = r.notes;
 	return method;
+}
+
+function recipeSteps(raw: string): RecipeStep[] {
+	try {
+		const parsed: unknown = JSON.parse(raw);
+		if (!Array.isArray(parsed)) return [];
+		return parsed.filter((step): step is RecipeStep =>
+			typeof step === 'object' && step !== null &&
+			typeof (step as RecipeStep).id === 'string' &&
+			typeof (step as RecipeStep).label === 'string' &&
+			typeof (step as RecipeStep).time === 'number'
+		);
+	} catch {
+		return [];
+	}
+}
+
+export function recipeFromRow(r: RecipeRow): Recipe {
+	const recipe: Recipe = {
+		id: r.id, methodId: r.method_id, name: r.name,
+		doseIn: r.dose_in, yieldOut: r.yield_out, temperature: r.temperature,
+		targetTime: r.target_time, steps: recipeSteps(r.steps)
+	};
+	if (r.bean_id != null) recipe.beanId = r.bean_id;
+	if (r.grind != null) recipe.grind = r.grind;
+	if (r.notes != null) recipe.notes = r.notes;
+	return recipe;
 }
 
 export async function getAllBeans(): Promise<Bean[]> {
@@ -223,14 +256,19 @@ export async function getAllMethods(): Promise<MethodDef[]> {
 	return rows.map(methodFromRow);
 }
 
+export async function getAllRecipes(): Promise<Recipe[]> {
+	const rows = await query<RecipeRow>('SELECT * FROM recipes WHERE deleted = 0 ORDER BY name');
+	return rows.map(recipeFromRow);
+}
+
 export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()): Promise<void> {
 	await exec(
 		`INSERT OR REPLACE INTO brews
 			(id, bean_id, method, date, time, grinder, machine, grind_setting, dose_in, yield_out,
 			 extraction_time, temperature, ratio, rating, rating2, aroma, flavor, body, finish,
 			 descriptors, with_milk, milk_drink, cuts_thru_milk, buy_again, best_for, recipe_notes,
-			 favorite, updated_at, deleted, dirty)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			 recipe_id, favorite, updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
 			brew.id, brew.beanId, brew.method, brew.date, brew.time, brew.grinder, brew.machine ?? null,
 			brew.grindSetting, brew.doseIn, brew.yieldOut, brew.extractionTime,
@@ -240,7 +278,7 @@ export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()):
 			brew.withMilk != null ? (brew.withMilk ? 1 : 0) : null,
 			brew.withMilk ? (brew.milkDrink ?? 'Flat White') : null,
 			brew.cutsThruMilk != null ? (brew.cutsThruMilk ? 1 : 0) : null,
-			brew.buyAgain ?? null, brew.bestFor ?? null, brew.recipeNotes ?? null,
+			brew.buyAgain ?? null, brew.bestFor ?? null, brew.recipeNotes ?? null, brew.recipeId ?? null,
 			brew.favorite ? 1 : 0,
 			meta.updatedAt, meta.deleted, meta.dirty
 		]
@@ -307,6 +345,20 @@ export async function insertMethod(method: MethodDef, meta: SyncMeta = localWrit
 	);
 }
 
+export async function insertRecipe(recipe: Recipe, meta: SyncMeta = localWriteMeta()): Promise<void> {
+	await exec(
+		`INSERT OR REPLACE INTO recipes
+			(id, method_id, name, bean_id, dose_in, yield_out, temperature, grind,
+			 target_time, notes, steps, updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		[
+			recipe.id, recipe.methodId, recipe.name, recipe.beanId ?? null, recipe.doseIn,
+			recipe.yieldOut, recipe.temperature, recipe.grind ?? null, recipe.targetTime,
+			recipe.notes ?? null, JSON.stringify(recipe.steps), meta.updatedAt, meta.deleted, meta.dirty
+		]
+	);
+}
+
 /**
  * Soft-delete: sets the tombstone + marks dirty so the deletion syncs. The row
  * stays until the delete has propagated (a later compaction pass can hard-delete
@@ -331,4 +383,8 @@ export async function softDeleteMachine(id: string): Promise<void> {
 
 export async function softDeleteMethod(id: string): Promise<void> {
 	await exec('UPDATE methods SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
+}
+
+export async function softDeleteRecipe(id: string): Promise<void> {
+	await exec('UPDATE recipes SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
 }

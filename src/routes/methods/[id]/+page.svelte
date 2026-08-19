@@ -10,6 +10,11 @@
 	const beans = $derived(beanById(journal.beans));
 	const machines = $derived(method ? journal.machines.filter((m) => m.method === method.id) : []);
 	const myBrews = $derived(method ? journal.brews.filter((b) => b.method === method.id) : []);
+	const recipes = $derived(method ? journal.recipes.filter((recipe) => recipe.methodId === method.id) : []);
+
+	function deleteRecipe(id: string) {
+		if (confirm('Delete this recipe? Saved brews will keep their recorded measurements.')) journal.deleteRecipe(id);
+	}
 </script>
 
 {#if method}
@@ -20,7 +25,7 @@
 	</BackHeader>
 
 	<div class="screen">
-		<MethodDetail {method} {machines} {myBrews} beanById={beans} />
+		<MethodDetail {method} {machines} {myBrews} {recipes} onDeleteRecipe={deleteRecipe} beanById={beans} />
 	</div>
 {:else}
 	<div class="screen">

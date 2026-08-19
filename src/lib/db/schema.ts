@@ -4,10 +4,11 @@
  * sync-metadata columns (`updated_at` / `deleted` / `dirty`) to the three
  * syncable tables; v2 added brew recipe notes; v5 added the `machines` and
  * `methods` tables and `brews.machine`; v6 added `methods.notes`; v7 added
- * `brews.milk_drink`; v8 made `brews.rating` nullable for Quick brew — see
+ * `brews.milk_drink`; v8 made `brews.rating` nullable for Quick brew; v9 added
+ * reusable `recipes` and optional `brews.recipe_id` provenance — see
  * [[Sync-Protocol]].
  */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 /**
  * Sync-metadata columns present on every syncable table (beans/grinders/brews):
@@ -23,13 +24,14 @@ export const SYNC_COLUMNS: readonly [string, string][] = [
 ];
 
 /** Tables that participate in sync (grinder_presets travel inside their grinder). */
-export const SYNCABLE_TABLES = ['beans', 'grinders', 'brews', 'machines', 'methods'] as const;
+export const SYNCABLE_TABLES = ['beans', 'grinders', 'brews', 'machines', 'methods', 'recipes'] as const;
 
 /** Brew columns added after the initial schema, used to upgrade existing DBs. */
 export const BREW_MIGRATION_COLUMNS: readonly [string, string][] = [
 	['recipe_notes', 'TEXT'],
 	['machine', 'TEXT'],
-	['milk_drink', 'TEXT']
+	['milk_drink', 'TEXT'],
+	['recipe_id', 'TEXT']
 ];
 
 export const METHOD_MIGRATION_COLUMNS: readonly [string, string][] = [['notes', 'TEXT']];
@@ -116,6 +118,23 @@ export const SCHEMA_SQL = `
 		dirty      INTEGER NOT NULL DEFAULT 0
 	);
 
+	CREATE TABLE IF NOT EXISTS recipes (
+		id          TEXT PRIMARY KEY,
+		method_id   TEXT NOT NULL,
+		name        TEXT NOT NULL,
+		bean_id     TEXT,
+		dose_in     REAL NOT NULL,
+		yield_out   REAL NOT NULL,
+		temperature REAL NOT NULL,
+		grind       TEXT,
+		target_time REAL NOT NULL,
+		notes       TEXT,
+		steps       TEXT NOT NULL DEFAULT '[]',
+		updated_at  INTEGER NOT NULL DEFAULT 0,
+		deleted     INTEGER NOT NULL DEFAULT 0,
+		dirty       INTEGER NOT NULL DEFAULT 0
+	);
+
 	CREATE TABLE IF NOT EXISTS brews (
 		id              TEXT PRIMARY KEY,
 		bean_id         TEXT NOT NULL,
@@ -143,6 +162,7 @@ export const SCHEMA_SQL = `
 		buy_again       TEXT,
 		best_for        TEXT,
 		recipe_notes    TEXT,
+		recipe_id       TEXT,
 		favorite        INTEGER NOT NULL DEFAULT 0,
 		updated_at      INTEGER NOT NULL DEFAULT 0,
 		deleted         INTEGER NOT NULL DEFAULT 0,

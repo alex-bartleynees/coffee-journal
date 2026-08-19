@@ -57,7 +57,7 @@ function makeBrewRatingNullable(database: Db): void {
 			extraction_time REAL NOT NULL, temperature REAL NOT NULL, ratio TEXT NOT NULL,
 			rating REAL, rating2 REAL, aroma TEXT, flavor TEXT, body TEXT, finish TEXT,
 			descriptors TEXT DEFAULT '[]', with_milk INTEGER, milk_drink TEXT,
-			cuts_thru_milk INTEGER, buy_again TEXT, best_for TEXT, recipe_notes TEXT,
+			cuts_thru_milk INTEGER, buy_again TEXT, best_for TEXT, recipe_notes TEXT, recipe_id TEXT,
 			favorite INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL DEFAULT 0,
 			deleted INTEGER NOT NULL DEFAULT 0, dirty INTEGER NOT NULL DEFAULT 0
 		);
@@ -65,13 +65,13 @@ function makeBrewRatingNullable(database: Db): void {
 			id, bean_id, method, date, time, grinder, machine, grind_setting, dose_in,
 			yield_out, extraction_time, temperature, ratio, rating, rating2, aroma,
 			flavor, body, finish, descriptors, with_milk, milk_drink, cuts_thru_milk,
-			buy_again, best_for, recipe_notes, favorite, updated_at, deleted, dirty
+			buy_again, best_for, recipe_notes, recipe_id, favorite, updated_at, deleted, dirty
 		)
 		SELECT
 			id, bean_id, method, date, time, grinder, machine, grind_setting, dose_in,
 			yield_out, extraction_time, temperature, ratio, rating, rating2, aroma,
 			flavor, body, finish, descriptors, with_milk, milk_drink, cuts_thru_milk,
-			buy_again, best_for, recipe_notes, favorite, updated_at, deleted, dirty
+			buy_again, best_for, recipe_notes, recipe_id, favorite, updated_at, deleted, dirty
 		FROM brews;
 		DROP TABLE brews;
 		ALTER TABLE brews_v8 RENAME TO brews;

@@ -14,6 +14,29 @@ export interface MethodDef {
 	notes?: string;
 }
 
+export interface RecipeStep {
+	id: string;
+	label: string;
+	/** Cumulative seconds from the start of the guided brew. */
+	time: number;
+	/** Optional cumulative water/yield target in grams. */
+	water?: number;
+}
+
+export interface Recipe {
+	id: string;
+	methodId: string;
+	name: string;
+	beanId?: string;
+	doseIn: number;
+	yieldOut: number;
+	temperature: number;
+	grind?: string;
+	targetTime: number;
+	notes?: string;
+	steps: RecipeStep[];
+}
+
 export interface Machine {
 	id: string;
 	name: string;
@@ -78,6 +101,8 @@ export interface Brew {
 	temperature: number;
 	ratio: string;
 	recipeNotes?: string;
+	/** Optional provenance only; brew measurements remain an immutable snapshot. */
+	recipeId?: string;
 	/** Null when the brew was logged without a tasting verdict (Quick brew). */
 	rating: number | null;
 	rating2?: number | null;

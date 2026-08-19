@@ -1,15 +1,19 @@
 <script lang="ts">
 	import Timer from './Timer.svelte';
+	import GuidedBrew from './GuidedBrew.svelte';
+	import Icon from '$lib/icons/Icon.svelte';
 	import Stepper from './Stepper.svelte';
-	import type { Grinder } from '$lib/data/types';
+	import type { Grinder, Recipe } from '$lib/data/types';
 	import type { DraftBrew } from './DraftBrew';
 
 	interface Props {
 		draft: DraftBrew;
 		grinders: Grinder[];
+		recipe?: Recipe;
 	}
 
-	let { draft, grinders }: Props = $props();
+	let { draft, grinders, recipe }: Props = $props();
+	let guiding = $state(false);
 
 	const ratio = $derived(draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—');
 	const grinder = $derived(grinders.find((g) => g.id === draft.grinder) ?? grinders[0]);
@@ -17,6 +21,12 @@
 
 <div class="step">
 	<div class="col-left">
+		{#if recipe}
+			<div class="recipe-banner">
+				<div><span>Recipe</span><strong>{recipe.name}</strong></div>
+				<button type="button" onclick={() => (guiding = true)}><Icon name="play" size={13} /> Guided brew</button>
+			</div>
+		{/if}
 		<Timer seconds={draft.extractionTime} method={draft.method} onChange={(v) => (draft.extractionTime = v)} />
 	</div>
 
@@ -77,6 +87,10 @@
 	</div>
 </div>
 
+{#if guiding && recipe}
+	<GuidedBrew {recipe} seconds={draft.extractionTime} onChange={(value) => (draft.extractionTime = value)} onClose={() => (guiding = false)} />
+{/if}
+
 <style>
 	.step {
 		padding: 8px 16px;
@@ -91,6 +105,11 @@
 		gap: 12px;
 		margin-bottom: 12px;
 	}
+	.recipe-banner { margin-bottom: 12px; padding: 13px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--card); display: flex; align-items: center; gap: 12px; }
+	.recipe-banner > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+	.recipe-banner span { color: var(--ink-3); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+	.recipe-banner strong { font-family: var(--serif); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.recipe-banner button { padding: 10px 13px; border-radius: 100px; background: var(--ink); color: var(--paper); display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
 	.recipe-notes {
 		resize: none;
 		font-size: 14px;

@@ -2,7 +2,8 @@
 	import MachineCard from '$lib/components/MachineCard.svelte';
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
-	import type { Bean, Brew, Machine, MethodDef } from '$lib/data/types';
+	import type { Bean, Brew, Machine, MethodDef, Recipe } from '$lib/data/types';
+	import { recipeRatio } from '$lib/data/recipes';
 	import { averageRating } from '$lib/data/ratings';
 
 	let {
@@ -10,13 +11,17 @@
 		machines,
 		myBrews,
 		beanById: beans,
-		onOpenMachine
+		onOpenMachine,
+		recipes = [],
+		onDeleteRecipe
 	}: {
 		method: MethodDef;
 		machines: Machine[];
 		myBrews: Brew[];
 		beanById: Record<string, Bean>;
 		onOpenMachine?: (e: MouseEvent, id: string) => void;
+		recipes?: Recipe[];
+		onDeleteRecipe?: (id: string) => void;
 	} = $props();
 
 	const brewCountByMachine = $derived.by(() => {
@@ -58,6 +63,27 @@
 			<a class="add-machine" href={`/machines/new?method=${method.id}`}>
 				<Icon name="plus" size={14} /> Add machine to this method
 			</a>
+	</div>
+
+	<div class="section-label">Recipes for this method</div>
+	<div class="recipe-list">
+		{#each recipes as recipe (recipe.id)}
+			<div class="recipe-card">
+				<a class="recipe-main" href={`/methods/${method.id}/recipes/new?edit=${recipe.id}`}>
+					<div>
+						<div class="recipe-name">{recipe.name}</div>
+						<div class="recipe-meta">{recipe.beanId ? (beans[recipe.beanId]?.name ?? 'Bean unavailable') : 'Any bean'} · {recipe.steps.length} steps · {recipe.temperature}°C</div>
+					</div>
+					<div class="recipe-ratio mono">{recipeRatio(recipe)}</div>
+				</a>
+				{#if onDeleteRecipe}
+					<button class="recipe-delete" type="button" aria-label={`Delete ${recipe.name}`} onclick={() => onDeleteRecipe(recipe.id)}><Icon name="close" size={14} /></button>
+				{/if}
+			</div>
+		{:else}
+			<div class="recipe-empty">No recipes added for this method yet</div>
+		{/each}
+		<a class="add-machine" href={`/methods/${method.id}/recipes/new`}><Icon name="plus" size={14} /> Add recipe</a>
 	</div>
 
 	<div class="section-label">Brews using this method</div>
@@ -151,6 +177,15 @@
 		font-size: 13px;
 		font-weight: 500;
 	}
+	.recipe-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+	.recipe-card { display: flex; align-items: center; background: var(--card); border: 1px solid var(--line-soft); border-radius: var(--r-lg); overflow: hidden; }
+	.recipe-main { flex: 1; min-width: 0; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+	.recipe-main > div:first-child { flex: 1; min-width: 0; }
+	.recipe-name { font-family: var(--serif); font-weight: 600; font-size: 16px; }
+	.recipe-meta { margin-top: 3px; color: var(--ink-3); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.recipe-ratio { color: var(--ink-3); font-size: 12px; }
+	.recipe-delete { align-self: stretch; width: 42px; display: grid; place-items: center; color: var(--ink-3); border-left: 1px solid var(--line-soft); }
+	.recipe-empty { padding: 20px; text-align: center; color: var(--ink-3); font-size: 13px; border: 1px dashed var(--line); border-radius: var(--r-lg); }
 	.brew-log {
 		padding: 16px 16px 24px;
 		display: flex;

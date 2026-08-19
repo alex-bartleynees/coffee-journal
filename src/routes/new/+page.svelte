@@ -16,6 +16,7 @@
 
 	let tab = $state(0);
 	const draft = $state(createDraft(journal.beans[0]?.id ?? ''));
+	const selectedRecipe = $derived(draft.recipeId ? journal.recipes.find((recipe) => recipe.id === draft.recipeId) : undefined);
 	const steps = $derived(brewSteps(draft.quickBrew));
 	let initializedEditId: string | null = null;
 
@@ -129,10 +130,11 @@
 				beans={journal.beans}
 				methods={journal.methods}
 				machines={journal.machines}
+				recipes={journal.recipes}
 				includeBeanId={existingBrew?.beanId}
 			/>
 		{:else if tab === 1}
-			<BrewStep {draft} grinders={journal.grinders} />
+			<BrewStep {draft} grinders={journal.grinders} recipe={selectedRecipe} />
 		{:else if tab === 2}
 			<TasteStep {draft} />
 		{:else if tab === 3}
