@@ -5,6 +5,7 @@
 	import type { Bean, Brew } from '$lib/data/types';
 	import { beanInventory } from '$lib/data/bean-inventory';
 	import { averageRating, bestRating } from '$lib/data/ratings';
+	import { formatDecimal, formatRatio } from '$lib/data/numbers';
 
 	let { bean, beanBrews }: { bean: Bean; beanBrews: Brew[] } = $props();
 
@@ -48,8 +49,8 @@
 	<div class="section-label">Bag</div>
 	<div class="bag-card">
 		<div class="bag-top">
-			<div class="bag-remaining mono">{remaining}<span class="bag-unit">g left</span></div>
-			<div class="bag-of">of {bean.bagWeight}g · {Math.round(pctUsed)}% used</div>
+			<div class="bag-remaining mono">{formatDecimal(remaining)}<span class="bag-unit">g left</span></div>
+			<div class="bag-of">of {formatDecimal(bean.bagWeight)}g · {Math.round(pctUsed)}% used</div>
 		</div>
 		<div class="bag-track">
 			<div class="bag-fill {bean.roast}" style="width:{100 - pctUsed}%"></div>
@@ -93,7 +94,7 @@
 				<MethodIcon method={brew.method} size={16} stroke="var(--ink-2)" />
 				<div class="history-meta">
 					<div class="history-date">{brew.date} · {brew.time}</div>
-					<div class="history-recipe mono">{brew.doseIn}g → {brew.yieldOut}g · {brew.ratio}</div>
+					<div class="history-recipe mono">{formatDecimal(brew.doseIn)}g → {formatDecimal(brew.yieldOut)}g · {formatRatio(brew.ratio)}</div>
 				</div>
 				<div class="history-rating">
 					{#if brew.rating == null}

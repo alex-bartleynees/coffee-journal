@@ -59,3 +59,19 @@ describe('quick brew draft state', () => {
 		expect('quickBrew' in brew).toBe(false);
 	});
 });
+
+describe('brew measurement precision', () => {
+	it('normalizes floating-point noise before saving', () => {
+		const draft = createDraft('bean-1');
+		Object.assign(draft, {
+			doseIn: 18.200000000000003,
+			yieldOut: 38.099999999999994,
+			grindSetting: 2.0999999999999996,
+			temperature: 92.50000000000001
+		});
+
+		const brew = brewFromDraft(draft, { id: 'brew-1', date: calendarDate('2026-08-19'), time: '08:00' });
+
+		expect(brew).toMatchObject({ doseIn: 18.2, yieldOut: 38.1, grindSetting: 2.1, temperature: 92.5 });
+	});
+});

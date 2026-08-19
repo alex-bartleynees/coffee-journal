@@ -8,6 +8,7 @@
   import { parseIsoDate } from "$lib/data/date";
   import type { CalendarDate } from "$lib/data/date";
   import { ratingLabel } from "$lib/data/ratings";
+  import { formatDecimal, formatRatio } from "$lib/data/numbers";
 
   let {
     brew,
@@ -92,18 +93,18 @@
     <div class="recipe-cell">
       <div class="recipe-label">Dose</div>
       <div class="recipe-value">
-        {brew.doseIn}<span class="recipe-unit">g</span>
+        {formatDecimal(brew.doseIn)}<span class="recipe-unit">g</span>
       </div>
     </div>
     <div class="recipe-cell">
       <div class="recipe-label">Yield</div>
       <div class="recipe-value">
-        {brew.yieldOut}<span class="recipe-unit">g</span>
+        {formatDecimal(brew.yieldOut)}<span class="recipe-unit">g</span>
       </div>
     </div>
     <div class="recipe-cell">
       <div class="recipe-label">Ratio</div>
-      <div class="recipe-value mono">{brew.ratio}</div>
+      <div class="recipe-value mono">{formatRatio(brew.ratio)}</div>
     </div>
     <div class="recipe-cell">
       <div class="recipe-label">Time</div>
@@ -114,13 +115,13 @@
     <div class="recipe-cell">
       <div class="recipe-label">Temp</div>
       <div class="recipe-value">
-        {brew.temperature}<span class="recipe-unit">°C</span>
+        {formatDecimal(brew.temperature)}<span class="recipe-unit">°C</span>
       </div>
     </div>
     <div class="recipe-cell">
       <div class="recipe-label">Grind</div>
       <div class="recipe-value">
-        {brew.grindSetting}<span class="recipe-unit"
+        {formatDecimal(brew.grindSetting)}<span class="recipe-unit"
           >{grinder?.name.split(" ")[0]}</span
         >
       </div>

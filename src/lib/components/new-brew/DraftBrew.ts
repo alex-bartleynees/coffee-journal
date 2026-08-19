@@ -1,5 +1,6 @@
 import type { Brew, Method, MilkDrink } from '$lib/data/types';
 import type { CalendarDate } from '$lib/data/date';
+import { roundDecimal } from '$lib/data/numbers';
 
 export interface DraftBrew {
 	quickBrew: boolean;
@@ -104,6 +105,10 @@ export function brewFromDraft(
 	const shared = {
 		...draft,
 		...identity,
+		grindSetting: roundDecimal(draft.grindSetting),
+		doseIn: roundDecimal(draft.doseIn),
+		yieldOut: roundDecimal(draft.yieldOut),
+		temperature: roundDecimal(draft.temperature),
 		ratio: draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—',
 		recipeNotes: draft.recipeNotes.trim() || undefined,
 		recipeId: draft.recipeId ?? undefined,

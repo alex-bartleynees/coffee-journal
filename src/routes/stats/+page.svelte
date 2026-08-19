@@ -4,6 +4,7 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import { methodLabel } from '$lib/data/methods';
 	import { averageRating } from '$lib/data/ratings';
+	import { formatDecimal } from '$lib/data/numbers';
 
 	const brews = $derived(journal.brews);
 	const beans = $derived(journal.beans);
@@ -65,7 +66,7 @@
 
 	<div class="big-number">
 		<div class="big-value">{total}</div>
-		<div class="big-caption">brews logged · <span class="mono">{totalGrams}g</span> through the grinder</div>
+		<div class="big-caption">brews logged · <span class="mono">{formatDecimal(totalGrams)}g</span> through the grinder</div>
 	</div>
 
 	<div class="stats-columns">

@@ -5,6 +5,7 @@
 	import type { Bean, Brew, Machine, MethodDef, Recipe } from '$lib/data/types';
 	import { recipeRatio } from '$lib/data/recipes';
 	import { averageRating } from '$lib/data/ratings';
+	import { formatDecimal } from '$lib/data/numbers';
 
 	let {
 		method,
@@ -72,7 +73,7 @@
 				<a class="recipe-main" href={`/methods/${method.id}/recipes/new?edit=${recipe.id}`}>
 					<div>
 						<div class="recipe-name">{recipe.name}</div>
-						<div class="recipe-meta">{recipe.beanId ? (beans[recipe.beanId]?.name ?? 'Bean unavailable') : 'Any bean'} · {recipe.steps.length} steps · {recipe.temperature}°C</div>
+						<div class="recipe-meta">{recipe.beanId ? (beans[recipe.beanId]?.name ?? 'Bean unavailable') : 'Any bean'} · {recipe.steps.length} steps · {formatDecimal(recipe.temperature)}°C</div>
 					</div>
 					<div class="recipe-ratio mono">{recipeRatio(recipe)}</div>
 				</a>

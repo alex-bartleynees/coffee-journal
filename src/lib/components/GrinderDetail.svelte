@@ -3,6 +3,7 @@
 	import type { Bean, Brew, Grinder } from '$lib/data/types';
 	import { methodLabel } from '$lib/data/methods';
 	import { journal } from '$lib/stores/journal.svelte';
+	import { formatDecimal } from '$lib/data/numbers';
 
 	let { grinder, myBrews, beanById: beans }: { grinder: Grinder; myBrews: Brew[]; beanById: Record<string, Bean> } =
 		$props();
@@ -50,7 +51,7 @@
 				{@const pct = (p.setting / grinder.range[1]) * 100}
 				<div class="preset-marker" style="left:{pct}%">
 					<div class="preset-marker-label">{methodLabel(journal.methods, p.method)}</div>
-					<div class="preset-marker-dot mono">{p.setting}</div>
+				<div class="preset-marker-dot mono">{formatDecimal(p.setting)}</div>
 				</div>
 			{/each}
 		</div>
@@ -86,7 +87,7 @@
 		{#each myBrews as br (br.id)}
 			{@const bean = beans[br.beanId]}
 			<a class="log-row" href="/brew/{br.id}">
-				<div class="log-setting mono">{br.grindSetting}</div>
+				<div class="log-setting mono">{formatDecimal(br.grindSetting)}</div>
 				<div class="log-meta">
 					<div class="log-name">{bean?.name}</div>
 					<div class="log-sub">{methodLabel(journal.methods, br.method)} · {br.date}</div>

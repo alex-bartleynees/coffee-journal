@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import BackHeader from '$lib/components/BackHeader.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
+	import { formatDecimal, formatRatio } from '$lib/data/numbers';
 	import { beanById, formatExtractionTime } from '$lib/data/sample';
 	import { methodLabel } from '$lib/data/methods';
 	import { ratingLabel } from '$lib/data/ratings';
@@ -20,11 +21,11 @@
 			? [
 					{ label: 'Bean', a: beans[a.beanId]?.name, b: beans[b.beanId]?.name },
 					{ label: 'Method', a: methodLabel(journal.methods, a.method), b: methodLabel(journal.methods, b.method) },
-					{ label: 'Dose', a: `${a.doseIn}g`, b: `${b.doseIn}g` },
-					{ label: 'Yield', a: `${a.yieldOut}g`, b: `${b.yieldOut}g` },
-					{ label: 'Ratio', a: a.ratio, b: b.ratio },
+					{ label: 'Dose', a: `${formatDecimal(a.doseIn)}g`, b: `${formatDecimal(b.doseIn)}g` },
+					{ label: 'Yield', a: `${formatDecimal(a.yieldOut)}g`, b: `${formatDecimal(b.yieldOut)}g` },
+					{ label: 'Ratio', a: formatRatio(a.ratio), b: formatRatio(b.ratio) },
 					{ label: 'Time', a: formatExtractionTime(a.extractionTime), b: formatExtractionTime(b.extractionTime) },
-					{ label: 'Temp', a: `${a.temperature}°C`, b: `${b.temperature}°C` },
+					{ label: 'Temp', a: `${formatDecimal(a.temperature)}°C`, b: `${formatDecimal(b.temperature)}°C` },
 					{ label: 'Rating', a: ratingLabel(a.rating), b: ratingLabel(b.rating), highlight: true }
 				]
 			: []

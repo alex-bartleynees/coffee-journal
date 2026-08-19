@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '$lib/icons/Icon.svelte';
 	import type { Recipe } from '$lib/data/types';
+	import { formatDecimal } from '$lib/data/numbers';
 	import { guidedMilestones } from '$lib/data/recipes';
 
 	interface Props {
@@ -58,7 +59,7 @@
 				<div class="milestone" class:active={index === currentIndex} class:done={step.time <= seconds}>
 					<span class="badge">{#if step.time <= seconds}<Icon name="check" size={11} />{:else}{index + 1}{/if}</span>
 					<span class="label">{step.label}</span>
-					<span class="target mono">{formatTime(step.time)}{step.water != null ? ` · ${step.water}g` : ''}</span>
+					<span class="target mono">{formatTime(step.time)}{step.water != null ? ` · ${formatDecimal(step.water)}g` : ''}</span>
 				</div>
 			{/each}
 		</div>

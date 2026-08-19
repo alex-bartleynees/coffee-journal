@@ -6,6 +6,7 @@
 	import DetailActionMenu from '$lib/components/DetailActionMenu.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
+	import { formatDecimal } from '$lib/data/numbers';
 	import { beanById } from '$lib/data/sample';
 	import { methodLabel } from '$lib/data/methods';
 
@@ -74,7 +75,7 @@
 							{#each g.presets as p (p.method)}
 								<div class="preset-chip">
 									<span class="preset-method">{methodLabel(journal.methods, p.method)}</span>
-									<span class="preset-value">{p.setting}</span>
+									<span class="preset-value">{formatDecimal(p.setting)}</span>
 								</div>
 							{/each}
 						</div>
@@ -110,7 +111,7 @@
 							<div class="recent-name">{g.name}</div>
 							<div class="recent-sub">{methodLabel(journal.methods, br.method)} · {bean?.name}</div>
 						</div>
-						<div class="recent-setting mono">{br.grindSetting}</div>
+						<div class="recent-setting mono">{formatDecimal(br.grindSetting)}</div>
 					</div>
 				{/if}
 			{/each}
