@@ -183,6 +183,21 @@ export async function upsertBeanPhoto(beanId: string, image: Blob): Promise<stri
 	return photoUrl({ bean_id: beanId, mime_type: image.type, image_data: bytes, updated_at: updatedAt, deleted: 0, dirty: 1 });
 }
 
+/** Read the persisted photo bytes for non-display consumers such as AI
+ * extraction. This avoids treating the cached blob: preview URL as fetchable
+ * application data, which is also disallowed by the production connect-src CSP. */
+export async function getBeanPhotoBlob(beanId: string): Promise<Blob | null> {
+	const rows = await query<BeanPhotoRow>(
+		'SELECT * FROM bean_photos WHERE bean_id = ? AND deleted = 0 AND image_data IS NOT NULL',
+		[beanId]
+	);
+	const photo = rows[0];
+	if (!photo?.image_data) return null;
+	const bytes = new Uint8Array(photo.image_data.byteLength);
+	bytes.set(photo.image_data);
+	return new Blob([bytes.buffer], { type: photo.mime_type });
+}
+
 export async function deleteBeanPhoto(beanId: string): Promise<void> {
 	const now = Date.now();
 	await exec(

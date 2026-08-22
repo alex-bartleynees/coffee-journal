@@ -13,6 +13,8 @@
 	import { aiAutofillAccess } from '$lib/ai/autofill-access';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { getSubscriptionResult, type SubscriptionStatus } from '$lib/billing';
+	import { extractionImage } from '$lib/ai/extraction-image';
+	import { getBeanPhotoBlob } from '$lib/db/queries';
 
 	const editId = $derived(page.url.searchParams.get('edit'));
 	const existingBean = $derived(editId ? journal.beans.find((bean) => bean.id === editId) : undefined);
@@ -135,7 +137,8 @@
 		extractionError = null;
 		extractionNotice = null;
 		try {
-			const image = pendingPhoto ?? await (await fetch(displayedPhoto)).blob();
+			const image = await extractionImage(pendingPhoto, existingBean?.id ?? null, getBeanPhotoBlob);
+			if (!image) throw new Error('The selected photo is unavailable.');
 			const result = await extractBeanDetails(image);
 			const applied: string[] = [];
 			const apply = (field: string, value: string | null, current: string, set: (value: string) => void) => {
