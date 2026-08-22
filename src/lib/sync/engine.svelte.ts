@@ -1,5 +1,5 @@
 import { Duration, Effect, Schedule, Schema } from 'effect';
-import { BFF_MODE, getCsrfToken, invalidateCsrfToken } from '$lib/bff';
+import { getCsrfToken, invalidateCsrfToken } from '$lib/bff';
 import { auth } from '$lib/stores/auth.svelte';
 import {
 	applyRemoteRecord,
@@ -24,17 +24,10 @@ import { syncPhotos } from './photo-sync';
  * window `online`, and a periodic backstop interval.
  */
 
-/**
- * BFF mode: same-origin `/api/sync` — cookies carry the session, YARP attaches
- * the Bearer token, and the antiforgery middleware wants `X-CSRF-TOKEN`.
- * Dev mode: straight at the local API with its `x-dev-user` dev auth.
- */
-const SYNC_ENDPOINT = BFF_MODE
-	? '/api/sync'
-	: `${(import.meta.env.VITE_SYNC_URL as string | undefined) ?? 'http://localhost:3001'}/sync`;
-const PHOTO_ENDPOINT = BFF_MODE
-	? '/api/photos'
-	: `${(import.meta.env.VITE_SYNC_URL as string | undefined) ?? 'http://localhost:3001'}/api/photos`;
+/** Same-origin BFF routes. Cookies carry the session, YARP attaches the Bearer
+ * token, and antiforgery middleware requires `X-CSRF-TOKEN` on writes. */
+const SYNC_ENDPOINT = '/api/sync';
+const PHOTO_ENDPOINT = '/api/photos';
 const DEBOUNCE_MS = 2_000;
 const INTERVAL_MS = 120_000;
 
@@ -60,15 +53,10 @@ class SyncHttpError extends Error {
 	}
 }
 
-/**
- * Request headers per mode. BFF: the antiforgery token (session/identity ride
- * on the cookie + YARP's Bearer attach — the browser never holds the JWT).
- * Dev: the API's dev-mode `x-dev-user` header.
- */
+/** Session/identity ride on the cookie + YARP's Bearer attachment; the browser
+ * never holds the JWT. */
 async function authHeaders(): Promise<Record<string, string>> {
-	if (BFF_MODE) return { 'X-CSRF-TOKEN': await getCsrfToken() };
-	if (import.meta.env.DEV) return { 'x-dev-user': 'dev' };
-	return {};
+	return { 'X-CSRF-TOKEN': await getCsrfToken() };
 }
 
 const postSync = (body: string) =>
@@ -78,14 +66,14 @@ const postSync = (body: string) =>
 				method: 'POST',
 				headers: { 'content-type': 'application/json', ...(await authHeaders()) },
 				body,
-				...(BFF_MODE ? { credentials: 'include' as const } : {})
+				credentials: 'include'
 			}),
 		catch: (e) => new Error(`network: ${String(e)}`)
 	}).pipe(
 		Effect.flatMap((res) => {
-			// A 400 in BFF mode is most likely a stale antiforgery token — drop the
+			// A 400 is most likely a stale antiforgery token — drop the
 			// cache so the next cycle fetches a fresh one.
-			if (BFF_MODE && res.status === 400) invalidateCsrfToken();
+			if (res.status === 400) invalidateCsrfToken();
 			return res.ok
 				? Effect.promise(() => res.json())
 				: Effect.fail(new SyncHttpError(res.status, `sync failed: HTTP ${res.status}`));
@@ -126,7 +114,7 @@ const syncCycle = Effect.gen(function* () {
 	appliedLocally += yield* Effect.promise(() => syncPhotos({
 		endpoint: PHOTO_ENDPOINT,
 		headers: authHeaders,
-		...(BFF_MODE ? { credentials: 'include' as const } : {})
+		credentials: 'include'
 	}));
 	return { appliedLocally };
 });

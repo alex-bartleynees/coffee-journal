@@ -9,6 +9,10 @@
 	import { calendarDate, todayIso } from '$lib/data/date';
 	import type { Bean, Roast } from '$lib/data/types';
 	import { prepareBeanPhoto } from '$lib/images/bean-photo';
+	import { extractBeanDetails, BeanExtractionHttpError } from '$lib/ai/bean-extraction';
+	import { aiAutofillAccess } from '$lib/ai/autofill-access';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { getSubscriptionResult, type SubscriptionStatus } from '$lib/billing';
 
 	const editId = $derived(page.url.searchParams.get('edit'));
 	const existingBean = $derived(editId ? journal.beans.find((bean) => bean.id === editId) : undefined);
@@ -40,7 +44,19 @@
 	let photoBusy = $state(false);
 	let photoError = $state<string | null>(null);
 	let previewUrl = $state<string | null>(null);
+	let extractionBusy = $state(false);
+	let extractionError = $state<string | null>(null);
+	let extractionNotice = $state<string | null>(null);
+	let subscriptionStatus = $state<SubscriptionStatus | null>(null);
+	let subscriptionLoadedForUser = false;
 	const displayedPhoto = $derived(previewUrl ?? (photoRemoved ? undefined : existingBean?.photoUrl));
+	const autofillAccess = $derived(aiAutofillAccess(auth.checked, auth.signedIn, subscriptionStatus));
+	const autofillLabel = $derived(
+		autofillAccess === 'checking' ? 'Checking membership…'
+			: autofillAccess === 'sign-in-required' ? 'Sign in to use AI autofill'
+				: autofillAccess === 'subscription-required' ? 'Membership required for AI autofill'
+					: 'Autofill from photo'
+	);
 
 	const canSave = $derived(name.trim().length > 0 && roaster.trim().length > 0);
 
@@ -74,6 +90,14 @@
 	});
 
 	$effect(() => {
+		if (!auth.checked || !auth.signedIn || subscriptionLoadedForUser) return;
+		subscriptionLoadedForUser = true;
+		void getSubscriptionResult().then((result) => {
+			subscriptionStatus = result.subscription.status;
+		});
+	});
+
+	$effect(() => {
 		if (!pendingPhoto) {
 			previewUrl = null;
 			return;
@@ -103,6 +127,52 @@
 		pendingPhoto = null;
 		photoRemoved = true;
 		photoError = null;
+	}
+
+	async function extractFromPhoto() {
+		if (!displayedPhoto || extractionBusy || autofillAccess !== 'available') return;
+		extractionBusy = true;
+		extractionError = null;
+		extractionNotice = null;
+		try {
+			const image = pendingPhoto ?? await (await fetch(displayedPhoto)).blob();
+			const result = await extractBeanDetails(image);
+			const applied: string[] = [];
+			const apply = (field: string, value: string | null, current: string, set: (value: string) => void) => {
+				if (!value || current.trim()) return;
+				set(value);
+				applied.push(field);
+			};
+			apply('name', result.name, name, (value) => (name = value));
+			apply('roaster', result.roaster, roaster, (value) => (roaster = value));
+			apply('origin', result.origin, origin, (value) => (origin = value));
+			apply('process', result.process, process, (value) => (process = value));
+			apply('varietal', result.varietal, varietal, (value) => (varietal = value));
+			apply('altitude', result.altitude, altitude, (value) => (altitude = value));
+			if (result.roast) {
+				roast = result.roast;
+				applied.push('roast');
+			}
+			const newNotes = result.tasting.filter((note) =>
+				!tasting.some((existing) => existing.toLocaleLowerCase() === note.toLocaleLowerCase()));
+			if (newNotes.length > 0) {
+				tasting = [...tasting, ...newNotes];
+				applied.push('tasting notes');
+			}
+			extractionNotice = applied.length > 0
+				? 'Details were prefilled. Review and correct them before saving.'
+				: 'No new details were found. You can keep filling the form manually.';
+		} catch (error) {
+			if (error instanceof BeanExtractionHttpError && error.status === 403) {
+				extractionError = 'AI autofill requires a Bloom membership.';
+			} else if (error instanceof BeanExtractionHttpError && error.status === 401) {
+				extractionError = 'Sign in to use AI autofill.';
+			} else {
+				extractionError = 'Could not read this bag right now. You can still enter the details manually.';
+			}
+		} finally {
+			extractionBusy = false;
+		}
 	}
 
 	function toggleTasting(t: string) {
@@ -207,7 +277,38 @@
 				</button>
 			{/if}
 			{#if photoError}<p class="photo-error" role="alert">{photoError}</p>{/if}
-			<p class="photo-help">Stored only on this device. Photos are resized before saving.</p>
+			<p class="photo-help">
+				{autofillAccess === 'available'
+					? 'Stored on this device and synced securely. Photos are resized before saving.'
+					: 'Stored on this device. Photos are resized before saving.'}
+			</p>
+			{#if displayedPhoto}
+				<button
+					class="extract-button"
+					type="button"
+					disabled={extractionBusy || autofillAccess !== 'available'}
+					onclick={extractFromPhoto}
+				>
+					<Icon name="sparkles" size={16} />
+					{extractionBusy ? 'Reading bag…' : autofillLabel}
+				</button>
+				<p class="photo-help">
+					{#if autofillAccess === 'sign-in-required'}
+						<a href="/login">Sign in</a> to check your membership.
+					{:else if autofillAccess === 'subscription-required'}
+						<a href="/pricing">Bloom membership</a> is required for AI autofill.
+					{:else}
+						AI suggestions are never saved until you review the form.
+					{/if}
+				</p>
+			{/if}
+			{#if extractionNotice}<p class="extraction-notice" role="status">{extractionNotice}</p>{/if}
+			{#if extractionError}
+				<p class="photo-error" role="alert">
+					{extractionError}
+					{#if auth.signedIn && extractionError.includes('membership')} <a href="/pricing">View membership</a>{/if}
+				</p>
+			{/if}
 		</div>
 
 		<div class="field">
@@ -373,6 +474,29 @@
 		font-weight: 600;
 	}
 	.photo-button.remove { color: var(--accent-2); }
+	.extract-button {
+		width: 100%;
+		margin-top: 10px;
+		padding: 10px 14px;
+		border-radius: 12px;
+		background: var(--ink);
+		color: var(--paper);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 7px;
+		font-size: 13px;
+		font-weight: 650;
+	}
+	.extract-button:disabled { opacity: 0.6; }
+	.extraction-notice {
+		margin: 9px 2px 0;
+		padding: 9px 10px;
+		border-radius: 10px;
+		background: color-mix(in srgb, var(--forest) 10%, transparent);
+		color: var(--ink-2);
+		font-size: 12px;
+	}
 	.photo-help, .photo-error { margin: 7px 2px 0; font-size: 11px; color: var(--ink-3); }
 	.photo-error { color: var(--accent-2); }
 	.not-found {

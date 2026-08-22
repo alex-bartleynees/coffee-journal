@@ -1,15 +1,10 @@
-# Bloom (coffee-app) — static SPA build served by nginx.
-# VITE_BFF=true bakes BFF mode in: cookie auth via /bff/*, sync via same-origin
-# /api/sync (the coffee-journal-bff instance fronts this container). Build with
-# --build-arg VITE_BFF=false for a standalone build (dev stand-in auth).
+# Bloom (coffee-app) — static SPA served behind coffee-journal-bff by nginx.
 
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-ARG VITE_BFF=true
-ENV VITE_BFF=$VITE_BFF
 RUN npm run build
 
 # Unprivileged nginx: runs as non-root (uid 101) and listens on 8080 by default,

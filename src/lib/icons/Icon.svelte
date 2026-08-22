@@ -28,7 +28,8 @@
 		| 'coffee'
 		| 'machine'
 		| 'sun'
-		| 'moon';
+		| 'moon'
+		| 'sparkles';
 </script>
 
 <script lang="ts">
@@ -153,6 +154,9 @@
 			<path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
 		{:else if name === 'moon'}
 			<path d="M20 14.5A8 8 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z" />
+		{:else if name === 'sparkles'}
+			<path d="M12 3l1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2z" />
+			<path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8zM5 13l.6 1.4L7 15l-1.4.6L5 17l-.6-1.4L3 15l1.4-.6z" />
 		{/if}
 	</svg>
 {/if}
