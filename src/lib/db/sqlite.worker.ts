@@ -31,6 +31,11 @@ type Db = {
 };
 
 let db: Db | null = null;
+let replyPort: MessagePort | null = null;
+
+function reply(message: WorkerReply): void {
+	replyPort?.postMessage(message);
+}
 
 /** Names of the columns currently on a table (via PRAGMA table_info). */
 function columnNames(database: Db, table: string): Set<string> {
@@ -131,29 +136,44 @@ function migrate(database: Db): void {
 	});
 }
 
-self.onmessage = ({ data }: MessageEvent<WorkerMsg>) => {
+self.onmessage = ({ data, ports }: MessageEvent<{ type: 'activate' }>) => {
+	if (data.type !== 'activate' || !ports[0] || replyPort) return;
+	replyPort = ports[0];
+	replyPort.onmessage = handleMessage;
+	replyPort.start();
+	void holdWorkerLock();
+	void init();
+};
+
+function handleMessage({ data }: MessageEvent<WorkerMsg>): void {
 	if (!db) {
-		(self as DedicatedWorkerGlobalScope).postMessage({
+		reply({
 			id: data.id,
 			error: 'DB not ready'
-		} satisfies WorkerReply);
+		});
 		return;
 	}
 	try {
 		if (data.type === 'exec') {
 			db.exec({ sql: data.sql, bind: data.bind });
-			(self as DedicatedWorkerGlobalScope).postMessage({ id: data.id, result: null } satisfies WorkerReply);
+			reply({ id: data.id, result: null });
 		} else {
 			const rows: Record<string, unknown>[] = [];
 			db.exec({ sql: data.sql, bind: data.bind, rowMode: 'object', resultRows: rows });
-			(self as DedicatedWorkerGlobalScope).postMessage({ id: data.id, result: rows } satisfies WorkerReply);
+			reply({ id: data.id, result: rows });
 		}
 	} catch (e) {
-		(self as DedicatedWorkerGlobalScope).postMessage({ id: data.id, error: String(e) } satisfies WorkerReply);
+		reply({ id: data.id, error: String(e) });
 	}
-};
+}
 
-async function init() {
+/** Holding a worker-owned Web Lock keeps browsers from suspending the active DB worker. */
+async function holdWorkerLock(): Promise<void> {
+	if (!('locks' in navigator)) return;
+	await navigator.locks.request('bloom-sqlite-worker-active', () => new Promise(() => {}));
+}
+
+async function initialize(): Promise<void> {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const sqlite3 = await (sqlite3InitModule as any)({
 		locateFile: (file: string) => (file.endsWith('.wasm') ? wasmUrl : file)
@@ -176,18 +196,20 @@ async function init() {
 	db.exec({ sql: SCHEMA_SQL });
 	migrate(db);
 
-	(self as DedicatedWorkerGlobalScope).postMessage({
+	reply({
 		id: -1,
 		type: 'ready',
 		hasOpfs
-	} satisfies WorkerReply);
+	});
 }
 
-init().catch((e) => {
-	(self as DedicatedWorkerGlobalScope).postMessage({
-		id: -1,
-		type: 'ready',
-		hasOpfs: false,
-		error: String(e)
-	} satisfies WorkerReply);
-});
+function init(): Promise<void> {
+	return initialize().catch((e) => {
+		reply({
+			id: -1,
+			type: 'ready',
+			hasOpfs: false,
+			error: String(e)
+		});
+	});
+}
