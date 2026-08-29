@@ -6,6 +6,7 @@
 	import RoastDot from '$lib/components/RoastDot.svelte';
 	import { beanById } from '$lib/data/sample';
 	import { methodLabel } from '$lib/data/methods';
+	import { espressoDrinkLabel } from '$lib/data/espresso-drinks';
 	import { searchJournal } from '$lib/data/search';
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
@@ -90,7 +91,7 @@
 									<span class="method-mark"><MethodIcon method={brew.method} size={22} /></span>
 									<span class="result-copy">
 										<span class="result-title">{bean?.name ?? 'Unknown bean'}</span>
-										<span class="result-meta">{bean?.roaster ?? 'Unknown roaster'} · {methodLabel(journal.methods, brew.method)} · {brew.rating == null ? 'Not rated' : `${brew.rating}/10`}</span>
+										<span class="result-meta">{bean?.roaster ?? 'Unknown roaster'} · {espressoDrinkLabel(brew) ?? methodLabel(journal.methods, brew.method)} · {brew.rating == null ? 'Not rated' : `${brew.rating}/10`}</span>
 									</span>
 									<Icon name="chevron" size={14} />
 								</button>

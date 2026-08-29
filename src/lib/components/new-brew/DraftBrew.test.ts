@@ -9,19 +9,40 @@ describe('milk drink draft state', () => {
 
 		expect(draft.withMilk).toBe(false);
 		expect(draft.milkDrink).toBeNull();
+		expect(draft.espressoDrink).toBe('Espresso');
 	});
 
 	it('restores the recorded milk drink', () => {
-		const draft = draftFromBrew({ withMilk: true, milkDrink: 'Cortado' } as Brew);
+		const draft = draftFromBrew({ method: 'espresso', withMilk: true, milkDrink: 'Cortado' } as Brew);
 
 		expect(draft.withMilk).toBe(true);
 		expect(draft.milkDrink).toBe('Cortado');
+		expect(draft.espressoDrink).toBe('Cortado');
 	});
 
 	it('treats older milk brews as flat whites', () => {
-		const draft = draftFromBrew({ withMilk: true } as Brew);
+		const draft = draftFromBrew({ method: 'espresso', withMilk: true } as Brew);
 
 		expect(draft.milkDrink).toBe('Flat White');
+		expect(draft.espressoDrink).toBe('Flat White');
+	});
+
+	it('saves a canonical black drink without milk-only values', () => {
+		const draft = createDraft('bean-1');
+		Object.assign(draft, { espressoDrink: 'Long Black' as const, withMilk: false, milkDrink: null, rating2: 8, cutsThruMilk: true });
+
+		const brew = brewFromDraft(draft, { id: 'brew-1', date: calendarDate('2026-08-28'), time: '08:00' });
+
+		expect(brew).toMatchObject({ espressoDrink: 'Long Black', withMilk: false, milkDrink: null, rating2: null, cutsThruMilk: false });
+	});
+
+	it('saves the canonical and compatibility values for a milk drink', () => {
+		const draft = createDraft('bean-1');
+		Object.assign(draft, { espressoDrink: 'Flat White' as const, withMilk: true, milkDrink: 'Flat White' as const, rating2: 8 });
+
+		const brew = brewFromDraft(draft, { id: 'brew-1', date: calendarDate('2026-08-28'), time: '08:00' });
+
+		expect(brew).toMatchObject({ espressoDrink: 'Flat White', withMilk: true, milkDrink: 'Flat White', rating2: 8 });
 	});
 });
 

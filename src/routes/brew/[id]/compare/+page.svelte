@@ -6,6 +6,7 @@
 	import { beanById, formatExtractionTime } from '$lib/data/sample';
 	import { methodLabel } from '$lib/data/methods';
 	import { ratingLabel } from '$lib/data/ratings';
+	import { espressoDrinkLabel } from '$lib/data/espresso-drinks';
 
 	const beans = $derived(beanById(journal.beans));
 	const a = $derived(journal.brews.find((b) => b.id === page.params.id));
@@ -21,6 +22,7 @@
 			? [
 					{ label: 'Bean', a: beans[a.beanId]?.name, b: beans[b.beanId]?.name },
 					{ label: 'Method', a: methodLabel(journal.methods, a.method), b: methodLabel(journal.methods, b.method) },
+					{ label: 'Drink', a: espressoDrinkLabel(a) ?? '—', b: espressoDrinkLabel(b) ?? '—' },
 					{ label: 'Dose', a: `${formatDecimal(a.doseIn)}g`, b: `${formatDecimal(b.doseIn)}g` },
 					{ label: 'Yield', a: `${formatDecimal(a.yieldOut)}g`, b: `${formatDecimal(b.yieldOut)}g` },
 					{ label: 'Ratio', a: formatRatio(a.ratio), b: formatRatio(b.ratio) },

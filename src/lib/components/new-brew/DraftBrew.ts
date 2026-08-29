@@ -1,4 +1,5 @@
-import type { Brew, Method, MilkDrink } from '$lib/data/types';
+import type { Brew, EspressoDrink, Method, MilkDrink } from '$lib/data/types';
+import { espressoDrinkForBrew } from '$lib/data/espresso-drinks';
 import type { CalendarDate } from '$lib/data/date';
 import { roundDecimal } from '$lib/data/numbers';
 
@@ -9,6 +10,7 @@ export interface DraftBrew {
 	method: Method;
 	withMilk: boolean;
 	milkDrink: MilkDrink | null;
+	espressoDrink: EspressoDrink | null;
 	machine: string | null;
 	grinder: string;
 	grindSetting: number;
@@ -37,6 +39,7 @@ export function createDraft(beanId: string): DraftBrew {
 		method: 'espresso',
 		withMilk: false,
 		milkDrink: null,
+		espressoDrink: 'Espresso',
 		machine: null,
 		grinder: 'g1',
 		grindSetting: 14,
@@ -66,6 +69,7 @@ export function draftFromBrew(brew: Brew): DraftBrew {
 		method: brew.method,
 		withMilk: brew.withMilk ?? false,
 		milkDrink: brew.milkDrink ?? (brew.withMilk ? 'Flat White' : null),
+		espressoDrink: espressoDrinkForBrew(brew),
 		machine: brew.machine ?? null,
 		grinder: brew.grinder,
 		grindSetting: brew.grindSetting,
@@ -102,6 +106,7 @@ export function brewFromDraft(
 	draft: DraftBrew,
 	identity: { id: string; date: CalendarDate; time: string }
 ): Brew {
+	const withMilk = draft.method === 'espresso' && draft.withMilk;
 	const shared = {
 		...draft,
 		...identity,
@@ -113,7 +118,10 @@ export function brewFromDraft(
 		recipeNotes: draft.recipeNotes.trim() || undefined,
 		recipeId: draft.recipeId ?? undefined,
 		machine: draft.machine ?? undefined,
-		milkDrink: draft.withMilk ? draft.milkDrink : null
+		withMilk,
+		milkDrink: withMilk ? draft.milkDrink : null,
+		espressoDrink: draft.method === 'espresso' ? draft.espressoDrink : null,
+		cutsThruMilk: withMilk ? draft.cutsThruMilk : false
 	};
 	delete (shared as Partial<DraftBrew>).quickBrew;
 
@@ -121,7 +129,7 @@ export function brewFromDraft(
 		return {
 			...shared,
 			rating: draft.rating,
-			rating2: draft.withMilk ? draft.rating2 : null
+			rating2: withMilk ? draft.rating2 : null
 		};
 	}
 

@@ -5,6 +5,7 @@
 	import { methodLabel } from '$lib/data/methods';
 	import { averageRating } from '$lib/data/ratings';
 	import { formatDecimal } from '$lib/data/numbers';
+	import { espressoDrinkLabel } from '$lib/data/espresso-drinks';
 
 	const brews = $derived(journal.brews);
 	const beans = $derived(journal.beans);
@@ -18,6 +19,15 @@
 		brews.forEach((b) => (m[b.method] = (m[b.method] || 0) + 1));
 		return m;
 	});
+	const byEspressoDrink = $derived.by(() => {
+		const counts: Record<string, number> = {};
+		brews.filter((brew) => brew.method === 'espresso').forEach((brew) => {
+			const label = espressoDrinkLabel(brew) ?? 'Unspecified espresso drink';
+			counts[label] = (counts[label] || 0) + 1;
+		});
+		return Object.entries(counts).sort(([aLabel, aCount], [bLabel, bCount]) => bCount - aCount || aLabel.localeCompare(bLabel));
+	});
+	const espressoTotal = $derived(byEspressoDrink.reduce((sum, [, count]) => sum + count, 0));
 
 	const totalCost = $derived(
 		beans.reduce((s, bean) => {
@@ -43,7 +53,7 @@
 </script>
 
 <div class="screen">
-	<TopBar sub="Last 30 days" title="Stats" />
+	<TopBar sub="All time" title="Stats" />
 
 	<div class="kpi-grid">
 		<div class="kpi-tile">
@@ -84,6 +94,18 @@
 					</div>
 				{/each}
 			</div>
+			{#if byEspressoDrink.length > 0}
+				<div class="section-label drink-section-label">By espresso drink</div>
+				<div class="method-card">
+					{#each byEspressoDrink as [drink, count] (drink)}
+						<div class="method-row">
+							<div class="method-label">{drink}</div>
+							<div class="method-bar-track"><div class="method-bar-fill drink-bar" style="width:{(count / espressoTotal) * 100}%"></div></div>
+							<div class="method-count mono">{count}</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 
 		<div class="stats-column">
@@ -176,6 +198,8 @@
 		min-width: 24px;
 		text-align: right;
 	}
+	.drink-section-label { margin-top: 22px; }
+	.drink-bar { background: var(--accent); }
 	.spend-card {
 		margin: 0 16px;
 		padding: 18px;

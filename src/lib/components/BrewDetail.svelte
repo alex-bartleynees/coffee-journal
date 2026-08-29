@@ -9,6 +9,7 @@
   import type { CalendarDate } from "$lib/data/date";
   import { ratingLabel } from "$lib/data/ratings";
   import { formatDecimal, formatRatio } from "$lib/data/numbers";
+  import { espressoDrinkForBrew, espressoDrinkLabel, isMilkEspressoDrink } from "$lib/data/espresso-drinks";
 
   let {
     brew,
@@ -30,6 +31,8 @@
     Boolean(brew.descriptors?.length || brew.aroma || brew.flavor || brew.body || brew.finish),
   );
   const sourceRecipe = $derived(brew.recipeId ? journal.recipes.find((recipe) => recipe.id === brew.recipeId) : undefined);
+  const espressoDrink = $derived(espressoDrinkForBrew(brew));
+  const milkDrink = $derived(isMilkEspressoDrink(espressoDrink));
 
   function dateStr(d: CalendarDate) {
     return parseIsoDate(d).toLocaleDateString(undefined, {
@@ -43,7 +46,7 @@
 <div class="brew-detail">
   <div class="hero">
     <div class="hero-sub">
-      {dateStr(brew.date)} · {brew.time} · {methodLabel(journal.methods, brew.method)}{brew.withMilk ? ` + ${brew.milkDrink ?? "milk"}` : ""}
+      {dateStr(brew.date)} · {brew.time} · {espressoDrinkLabel(brew) ?? methodLabel(journal.methods, brew.method)}
     </div>
     <h1 class="hero-title">{bean.name}</h1>
     <div class="hero-meta">
@@ -60,7 +63,7 @@
         </div>
       {:else}
         <div class="rating-col">
-          <div class="rating-label">{brew.withMilk ? "Straight" : "Rating"}</div>
+          <div class="rating-label">{milkDrink ? "Straight" : "Rating"}</div>
           <div class="rating-value">
             {brew.rating}<span class="rating-denom">/ 10</span>
           </div>
@@ -69,7 +72,7 @@
         {#if brew.rating2 != null}
           <div class="rating-sep"></div>
           <div class="rating-col">
-            <div class="rating-label"><Icon name="milk" size={11} /> {brew.milkDrink ?? 'In milk'}</div>
+            <div class="rating-label"><Icon name="milk" size={11} /> {espressoDrink ?? 'In milk'}</div>
             <div class="rating-value">
               {brew.rating2}<span class="rating-denom">/ 10</span>
             </div>

@@ -113,6 +113,8 @@ export interface Brew {
 	descriptors?: string[];
 	withMilk?: boolean;
 	milkDrink?: MilkDrink | null;
+	/** Final beverage made from an espresso-method brew. Null on legacy/other-method brews. */
+	espressoDrink?: EspressoDrink | null;
 	cutsThruMilk?: boolean;
 	buyAgain?: 'Yes' | 'Maybe' | 'No' | null;
 	bestFor?: 'Daily driver' | 'Occasional' | 'Skip' | null;
@@ -121,3 +123,6 @@ export interface Brew {
 
 export const MILK_DRINKS = ['Flat White', 'Latte', 'Cappuccino', 'Cortado', 'Mocha', 'Other'] as const;
 export type MilkDrink = (typeof MILK_DRINKS)[number];
+export const BLACK_ESPRESSO_DRINKS = ['Espresso', 'Ristretto', 'Long Black', 'Americano', 'Iced Coffee'] as const;
+export type BlackEspressoDrink = (typeof BLACK_ESPRESSO_DRINKS)[number];
+export type EspressoDrink = BlackEspressoDrink | MilkDrink;

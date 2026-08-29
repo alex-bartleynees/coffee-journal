@@ -8,6 +8,7 @@
   import { search } from "$lib/stores/search.svelte";
   import { beanById } from "$lib/data/sample";
   import { methodLabel } from "$lib/data/methods";
+  import { espressoDrinkLabel } from "$lib/data/espresso-drinks";
   import { averageRating } from "$lib/data/ratings";
   import { formatDecimal, formatExtractionTime, formatRatio } from "$lib/data/numbers";
   import {
@@ -187,7 +188,7 @@
                     </div>
                   </div>
                   <div class="roaster">
-                    {bean.roaster} · {methodLabel(journal.methods, brew.method)}
+                    {bean.roaster} · {espressoDrinkLabel(brew) ?? methodLabel(journal.methods, brew.method)}
                   </div>
                 </div>
                 <div class="stats">

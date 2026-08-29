@@ -1,5 +1,6 @@
 import { beanById } from '$lib/data/sample';
 import { methodLabel } from '$lib/data/methods';
+import { espressoDrinkLabel } from '$lib/data/espresso-drinks';
 import type { Bean, Brew, Grinder, MethodDef } from '$lib/data/types';
 
 export interface JournalSearchSource {
@@ -43,6 +44,7 @@ export function searchJournal(
 			const bean = beansById[brew.beanId];
 			return containsQuery(
 				[
+					espressoDrinkLabel(brew) ?? undefined,
 					methodLabel(source.methods, brew.method),
 					brew.method,
 					brew.aroma,

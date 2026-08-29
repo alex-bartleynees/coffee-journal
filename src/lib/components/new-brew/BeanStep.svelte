@@ -1,7 +1,8 @@
 <script lang="ts">
 	import MethodIcon from '$lib/components/MethodIcon.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
-	import { MILK_DRINKS, type Bean, type Machine, type MethodDef, type MilkDrink, type Recipe } from '$lib/data/types';
+	import { BLACK_ESPRESSO_DRINKS, MILK_DRINKS, type Bean, type EspressoDrink, type Machine, type MethodDef, type Recipe } from '$lib/data/types';
+	import { isMilkEspressoDrink } from '$lib/data/espresso-drinks';
 	import { compatibleRecipes } from '$lib/data/recipes';
 	import type { DraftBrew } from './DraftBrew';
 
@@ -22,10 +23,29 @@
 	const methodMachines = $derived(machines.filter((m) => m.method === draft.method));
 	const availableRecipes = $derived(compatibleRecipes(recipes, draft.method, draft.beanId));
 
-	function selectMilkDrink(drink: MilkDrink) {
-		const selected = draft.withMilk && draft.milkDrink === drink;
-		draft.withMilk = !selected;
-		draft.milkDrink = selected ? null : drink;
+	function selectEspressoDrink(drink: EspressoDrink) {
+		const withMilk = isMilkEspressoDrink(drink);
+		draft.espressoDrink = drink;
+		draft.withMilk = withMilk;
+		draft.milkDrink = withMilk ? (drink as typeof draft.milkDrink) : null;
+		if (!withMilk) {
+			draft.rating2 = null;
+			draft.cutsThruMilk = false;
+		}
+	}
+
+	function selectMethod(method: string) {
+		const enteringEspresso = draft.method !== 'espresso' && method === 'espresso';
+		draft.method = method;
+		if (method !== 'espresso') {
+			draft.espressoDrink = null;
+			draft.withMilk = false;
+			draft.milkDrink = null;
+			draft.rating2 = null;
+			draft.cutsThruMilk = false;
+		} else if (enteringEspresso) {
+			selectEspressoDrink('Espresso');
+		}
 	}
 
 	// Reset/preselect the machine whenever the method changes (including on
@@ -91,7 +111,7 @@
 		<div class="section-label">Method</div>
 		<div class="method-grid">
 			{#each methods as m (m.id)}
-				<button class="method-option" class:selected={draft.method === m.id} onclick={() => (draft.method = m.id)}>
+				<button class="method-option" class:selected={draft.method === m.id} onclick={() => selectMethod(m.id)}>
 					<MethodIcon method={m.id} size={26} strokeWidth={1.4} />
 					<span>{m.label}</span>
 				</button>
@@ -99,17 +119,26 @@
 		</div>
 
 		{#if draft.method === 'espresso'}
-			<div class="milk-card">
+			<div class="milk-card espresso-drink-card">
 				<div class="milk-left">
-					<Icon name="milk" size={18} stroke="var(--ink-2)" />
+					<Icon name="espresso" size={18} stroke="var(--ink-2)" />
 					<div>
-						<div class="milk-title">With milk</div>
-						<div class="milk-sub">Adds a second rating for the milk drink</div>
+						<div class="milk-title">Espresso drink</div>
+						<div class="milk-sub">What did you make?</div>
 					</div>
 				</div>
-				<div class="milk-options" aria-label="Milk drink">
+				<div class="drink-group-label">Black</div>
+				<div class="milk-options" aria-label="Black espresso drink">
+					{#each BLACK_ESPRESSO_DRINKS as drink (drink)}
+						<button class="milk-chip" class:active={draft.espressoDrink === drink} onclick={() => selectEspressoDrink(drink)} aria-pressed={draft.espressoDrink === drink}>
+							{drink}
+						</button>
+					{/each}
+				</div>
+				<div class="drink-group-label">Milk</div>
+				<div class="milk-options" aria-label="Milk espresso drink">
 					{#each MILK_DRINKS as drink (drink)}
-						<button class="milk-chip" class:active={draft.withMilk && draft.milkDrink === drink} onclick={() => selectMilkDrink(drink)} aria-pressed={draft.withMilk && draft.milkDrink === drink}>
+						<button class="milk-chip" class:active={draft.espressoDrink === drink} onclick={() => selectEspressoDrink(drink)} aria-pressed={draft.espressoDrink === drink}>
 							{drink}
 						</button>
 					{/each}
@@ -319,6 +348,14 @@
 		flex-wrap: wrap;
 		gap: 8px;
 		margin-top: 14px;
+	}
+	.drink-group-label {
+		margin-top: 10px;
+		font-size: 9px;
+		font-weight: 600;
+		letter-spacing: 1px;
+		text-transform: uppercase;
+		color: var(--ink-3);
 	}
 	.milk-chip {
 		padding: 8px 14px;

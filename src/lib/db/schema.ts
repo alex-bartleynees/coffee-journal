@@ -5,10 +5,11 @@
  * syncable tables; v2 added brew recipe notes; v5 added the `machines` and
  * `methods` tables and `brews.machine`; v6 added `methods.notes`; v7 added
  * `brews.milk_drink`; v8 made `brews.rating` nullable for Quick brew; v9 added
- * reusable `recipes` and optional `brews.recipe_id` provenance — see
+ * reusable `recipes` and optional `brews.recipe_id` provenance; v10 added the
+ * canonical `brews.espresso_drink` final beverage — see
  * [[Sync-Protocol]].
  */
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 /**
  * Sync-metadata columns present on every syncable table (beans/grinders/brews):
@@ -31,7 +32,8 @@ export const BREW_MIGRATION_COLUMNS: readonly [string, string][] = [
 	['recipe_notes', 'TEXT'],
 	['machine', 'TEXT'],
 	['milk_drink', 'TEXT'],
-	['recipe_id', 'TEXT']
+	['recipe_id', 'TEXT'],
+	['espresso_drink', 'TEXT']
 ];
 
 export const METHOD_MIGRATION_COLUMNS: readonly [string, string][] = [['notes', 'TEXT']];
@@ -158,6 +160,7 @@ export const SCHEMA_SQL = `
 		descriptors     TEXT DEFAULT '[]',
 		with_milk       INTEGER,
 		milk_drink      TEXT,
+		espresso_drink  TEXT,
 		cuts_thru_milk  INTEGER,
 		buy_again       TEXT,
 		best_for        TEXT,
