@@ -58,3 +58,10 @@ export function daysBetween(a: CalendarDate, b: CalendarDate): number {
 	const [by, bm, bd] = b.split('-').map(Number);
 	return Math.round((Date.UTC(ay, am - 1, ad) - Date.UTC(by, bm - 1, bd)) / 86400000);
 }
+
+/** Whether a date falls in the Monday-to-Sunday week containing `reference`. */
+export function isInWeek(date: CalendarDate, reference: CalendarDate): boolean {
+	const daysSinceMonday = (parseIsoDate(reference).getDay() + 6) % 7;
+	const offset = daysBetween(date, reference);
+	return offset >= -daysSinceMonday && offset <= 6 - daysSinceMonday;
+}

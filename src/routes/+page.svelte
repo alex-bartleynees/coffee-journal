@@ -15,12 +15,16 @@
     calendarDate,
     todayIso,
     daysBetween,
+    isInWeek,
     parseIsoDate,
   } from "$lib/data/date";
   import type { CalendarDate } from "$lib/data/date";
 
   const beans = $derived(beanById(journal.beans));
   const brews = $derived(journal.brews);
+  const brewsThisWeek = $derived(
+    brews.filter((brew) => isInWeek(brew.date, todayIso())).length,
+  );
 
   const groups = $derived(
     brews.reduce<Record<string, typeof brews>>((acc, b) => {
@@ -123,7 +127,7 @@
       <div class="stat-item">
         <div class="stat-label">Brews</div>
         <div class="stat-value">
-          {brews.length}<span class="stat-unit">this wk</span>
+          {brewsThisWeek}<span class="stat-unit">this week</span>
         </div>
       </div>
       <div class="stat-divider"></div>
