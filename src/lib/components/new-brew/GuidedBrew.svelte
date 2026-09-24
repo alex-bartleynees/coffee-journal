@@ -3,6 +3,7 @@
 	import type { Recipe } from '$lib/data/types';
 	import { formatDecimal } from '$lib/data/numbers';
 	import { guidedMilestones } from '$lib/data/recipes';
+	import { useScreenWakeLock } from '$lib/browser/screenWakeLock.svelte';
 
 	interface Props {
 		recipe: Recipe;
@@ -13,6 +14,7 @@
 
 	let { recipe, seconds, onChange, onClose }: Props = $props();
 	let running = $state(false);
+	useScreenWakeLock(() => true);
 
 	const orderedSteps = $derived(guidedMilestones(recipe));
 	const currentIndex = $derived(Math.max(0, orderedSteps.findLastIndex((step) => step.time <= seconds)));

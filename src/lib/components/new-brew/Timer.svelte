@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '$lib/icons/Icon.svelte';
 	import type { Method } from '$lib/data/types';
+	import { useScreenWakeLock } from '$lib/browser/screenWakeLock.svelte';
 
 	interface Props {
 		seconds: number;
@@ -11,6 +12,7 @@
 	let { seconds, method, onChange }: Props = $props();
 
 	let running = $state(false);
+	useScreenWakeLock(() => running);
 
 	$effect(() => {
 		if (!running) return;
