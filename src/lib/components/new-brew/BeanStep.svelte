@@ -4,6 +4,7 @@
 	import { BLACK_ESPRESSO_DRINKS, MILK_DRINKS, type Bean, type EspressoDrink, type Machine, type MethodDef, type Recipe } from '$lib/data/types';
 	import { isMilkEspressoDrink } from '$lib/data/espresso-drinks';
 	import { compatibleRecipes } from '$lib/data/recipes';
+	import { brewEquipment } from '$lib/data/brew-equipment';
 	import type { DraftBrew } from './DraftBrew';
 
 	interface Props {
@@ -13,14 +14,17 @@
 		machines: Machine[];
 		recipes: Recipe[];
 		includeBeanId?: string;
+		includeMachineId?: string;
 	}
 
-	let { draft, beans, methods, machines, recipes, includeBeanId }: Props = $props();
+	let { draft, beans, methods, machines, recipes, includeBeanId, includeMachineId }: Props = $props();
 
 	const roastColor: Record<string, string> = { light: '#C9A57B', medium: '#8E5A3B', dark: '#4A2C1F' };
 
 	const selectedBean = $derived(beans.find((b) => b.id === draft.beanId));
-	const methodMachines = $derived(machines.filter((m) => m.method === draft.method));
+	const methodMachines = $derived(
+		brewEquipment(machines, includeMachineId).filter((m) => m.method === draft.method)
+	);
 	const availableRecipes = $derived(compatibleRecipes(recipes, draft.method, draft.beanId));
 
 	function selectEspressoDrink(drink: EspressoDrink) {

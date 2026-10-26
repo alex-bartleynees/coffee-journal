@@ -3,6 +3,7 @@ import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
 import wasmUrl from "@sqlite.org/sqlite-wasm/sqlite3.wasm?url";
 import {
   BREW_MIGRATION_COLUMNS,
+  EQUIPMENT_MIGRATION_COLUMNS,
   METHOD_MIGRATION_COLUMNS,
   PHOTO_SYNC_COLUMNS,
   SCHEMA_SQL,
@@ -131,6 +132,14 @@ function migrate(database: Db): void {
   for (const [col, def] of METHOD_MIGRATION_COLUMNS) {
     if (!methodColumns.has(col)) {
       database.exec({ sql: `ALTER TABLE methods ADD COLUMN ${col} ${def}` });
+    }
+  }
+  for (const table of ["grinders", "machines"]) {
+    const equipmentColumns = columnNames(database, table);
+    for (const [col, def] of EQUIPMENT_MIGRATION_COLUMNS) {
+      if (!equipmentColumns.has(col)) {
+        database.exec({ sql: `ALTER TABLE ${table} ADD COLUMN ${col} ${def}` });
+      }
     }
   }
   const photoColumns = columnNames(database, "bean_photos");

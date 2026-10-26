@@ -3,6 +3,7 @@
 	import type { Bean, Brew, Grinder } from '$lib/data/types';
 	import { methodLabel } from '$lib/data/methods';
 	import { journal } from '$lib/stores/journal.svelte';
+	import RetiredBadge from '$lib/components/RetiredBadge.svelte';
 	import { formatDecimal } from '$lib/data/numbers';
 
 	let { grinder, myBrews, beanById: beans }: { grinder: Grinder; myBrews: Brew[]; beanById: Record<string, Bean> } =
@@ -34,6 +35,7 @@
 		</div>
 		<div class="hero-maker">{grinder.maker}</div>
 		<h2 class="hero-name">{grinder.name}</h2>
+		{#if grinder.retired}<RetiredBadge variant="hero" />{/if}
 		<div class="hero-sub">{grinder.burr} {grinder.rpm ? `· ${grinder.rpm} rpm` : ''}</div>
 	</div>
 

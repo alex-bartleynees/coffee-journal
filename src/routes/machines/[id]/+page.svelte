@@ -21,7 +21,13 @@
 {#if machine}
 	<BackHeader onBack={() => history.back()} label="Machine">
 		{#snippet action()}
-			<DetailActionMenu editHref={`/machines/new?edit=${machine.id}`} label="Machine actions" onDelete={deleteMachine} />
+			<DetailActionMenu
+				editHref={`/machines/new?edit=${machine.id}`}
+				label="Machine actions"
+				onRetire={() => journal.toggleMachineRetired(machine.id)}
+				retired={machine.retired}
+				onDelete={deleteMachine}
+			/>
 		{/snippet}
 	</BackHeader>
 

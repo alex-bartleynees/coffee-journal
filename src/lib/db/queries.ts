@@ -37,12 +37,12 @@ export type BrewRow = {
 
 export type GrinderRow = {
 	id: string; name: string; maker: string; range_min: number; range_max: number;
-	step: number; type: string; burr: string; rpm: number | null; notes: string | null;
+	step: number; type: string; burr: string; rpm: number | null; notes: string | null; retired: number;
 };
 
 export type PresetRow = { grinder_id: string; method: string; setting: number };
 export type MachineRow = {
-	id: string; name: string; maker: string; type: string; method: string | null; notes: string | null;
+	id: string; name: string; maker: string; type: string; method: string | null; notes: string | null; retired: number;
 };
 export type MethodRow = { id: string; label: string; icon: string; notes: string | null };
 export type RecipeRow = {
@@ -109,6 +109,7 @@ export function grinderFromRow(r: GrinderRow, presets: PresetRow[] = []): Grinde
 		range: [r.range_min, r.range_max], step: r.step,
 		type: r.type as Grinder['type'], burr: r.burr,
 		rpm: r.rpm ?? null,
+		retired: !!r.retired,
 		presets: presets.map((p) => ({ method: p.method as Method, setting: p.setting }))
 	};
 	if (r.notes != null) g.notes = r.notes;
@@ -116,7 +117,7 @@ export function grinderFromRow(r: GrinderRow, presets: PresetRow[] = []): Grinde
 }
 
 export function machineFromRow(r: MachineRow): Machine {
-	const m: Machine = { id: r.id, name: r.name, maker: r.maker, type: r.type };
+	const m: Machine = { id: r.id, name: r.name, maker: r.maker, type: r.type, retired: !!r.retired };
 	if (r.method != null) m.method = r.method;
 	if (r.notes != null) m.notes = r.notes;
 	return m;
@@ -320,15 +321,26 @@ export async function insertBean(bean: Bean, meta: SyncMeta = localWriteMeta()):
 	);
 }
 
+/**
+ * `retired` is undefined in payloads from clients older than schema v11. Binding
+ * NULL keeps the stored flag rather than silently un-retiring the equipment.
+ */
+function retiredFlag(retired: boolean | undefined): number | null {
+	return retired == null ? null : retired ? 1 : 0;
+}
+
 export async function insertGrinder(grinder: Grinder, meta: SyncMeta = localWriteMeta()): Promise<void> {
 	await exec(
 		`INSERT OR REPLACE INTO grinders
-			(id, name, maker, range_min, range_max, step, type, burr, rpm, notes,
+			(id, name, maker, range_min, range_max, step, type, burr, rpm, notes, retired,
 			 updated_at, deleted, dirty)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		VALUES (?,?,?,?,?,?,?,?,?,?,
+			COALESCE(?, (SELECT retired FROM grinders WHERE id = ?), 0),
+			?,?,?)`,
 		[
 			grinder.id, grinder.name, grinder.maker, grinder.range[0], grinder.range[1],
 			grinder.step, grinder.type, grinder.burr, grinder.rpm ?? null, grinder.notes ?? null,
+			retiredFlag(grinder.retired), grinder.id,
 			meta.updatedAt, meta.deleted, meta.dirty
 		]
 	);
@@ -344,11 +356,13 @@ export async function insertGrinder(grinder: Grinder, meta: SyncMeta = localWrit
 export async function insertMachine(machine: Machine, meta: SyncMeta = localWriteMeta()): Promise<void> {
 	await exec(
 		`INSERT OR REPLACE INTO machines
-			(id, name, maker, type, method, notes, updated_at, deleted, dirty)
-		VALUES (?,?,?,?,?,?,?,?,?)`,
+			(id, name, maker, type, method, notes, retired, updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,
+			COALESCE(?, (SELECT retired FROM machines WHERE id = ?), 0),
+			?,?,?)`,
 		[
 			machine.id, machine.name, machine.maker, machine.type, machine.method ?? null,
-			machine.notes ?? null,
+			machine.notes ?? null, retiredFlag(machine.retired), machine.id,
 			meta.updatedAt, meta.deleted, meta.dirty
 		]
 	);

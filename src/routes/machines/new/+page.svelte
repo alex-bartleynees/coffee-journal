@@ -5,6 +5,7 @@
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { newId } from '$lib/data/id';
+	import RetirementToggle from '$lib/components/RetirementToggle.svelte';
 	import type { Machine } from '$lib/data/types';
 
 	const editId = $derived(page.url.searchParams.get('edit'));
@@ -17,6 +18,7 @@
 	// '' means "no method yet" — a machine can be added before its method is decided.
 	let method = $state('');
 	let notes = $state('');
+	let retired = $state(false);
 	let initializedCreateMethod = false;
 
 	const canSave = $derived(name.trim().length > 0 && maker.trim().length > 0);
@@ -28,6 +30,7 @@
 		type = existingMachine.type;
 		method = existingMachine.method ?? '';
 		notes = existingMachine.notes ?? '';
+		retired = existingMachine.retired ?? false;
 		initializedEditId = editId;
 	});
 
@@ -56,7 +59,8 @@
 			maker: maker.trim(),
 			type: type.trim() || '—',
 			method: method || undefined,
-			notes: notes.trim() || undefined
+			notes: notes.trim() || undefined,
+			retired
 		};
 		if (existingMachine) journal.updateMachine(machine);
 		else journal.addMachine(machine);
@@ -109,6 +113,8 @@
 			<textarea class="field-input" rows="2" placeholder="Main workhorse, descaled Feb 2026…" bind:value={notes}
 			></textarea>
 		</div>
+
+		<RetirementToggle bind:retired noun="machine" />
 	</div>
 
 	<div class="form-footer">

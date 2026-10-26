@@ -2,6 +2,7 @@
 	import MachineIllustration from '$lib/components/MachineIllustration.svelte';
 	import { methodLabel } from '$lib/data/methods';
 	import { journal } from '$lib/stores/journal.svelte';
+	import RetiredBadge from '$lib/components/RetiredBadge.svelte';
 	import type { Machine } from '$lib/data/types';
 
 	interface Props {
@@ -17,7 +18,10 @@
 <a class="machine-card" class:selected href="/machines/{machine.id}" {onclick}>
 	<MachineIllustration size={56} />
 	<div class="machine-info">
-		<div class="machine-name">{machine.name}</div>
+		<div class="machine-name">
+			{machine.name}
+			{#if machine.retired}<RetiredBadge />{/if}
+		</div>
 		<div class="machine-sub">
 			{machine.maker} · {machine.method ? methodLabel(journal.methods, machine.method) : 'No method'}
 		</div>

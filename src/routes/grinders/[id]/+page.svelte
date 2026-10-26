@@ -14,7 +14,12 @@
 {#if grinder}
 	<BackHeader onBack={() => history.back()} label="Grinder">
 		{#snippet action()}
-			<DetailActionMenu editHref={`/grinders/new?edit=${grinder.id}`} label="Grinder actions" />
+			<DetailActionMenu
+				editHref={`/grinders/new?edit=${grinder.id}`}
+				label="Grinder actions"
+				onRetire={() => journal.toggleGrinderRetired(grinder.id)}
+				retired={grinder.retired}
+			/>
 		{/snippet}
 	</BackHeader>
 

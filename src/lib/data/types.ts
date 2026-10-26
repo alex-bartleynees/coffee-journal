@@ -42,6 +42,8 @@ export interface Machine {
 	name: string;
 	maker: string;
 	type: string;
+	/** Retired equipment stays in the library and on historical brews, but is unavailable for new brews. */
+	retired?: boolean;
 	/** Optional — a machine can be added before its method is decided, or reassigned later. */
 	method?: string;
 	notes?: string;
@@ -82,6 +84,8 @@ export interface Grinder {
 	burr: string;
 	rpm: number | null;
 	notes?: string;
+	/** Retired equipment stays in the library and on historical brews, but is unavailable for new brews. */
+	retired?: boolean;
 	presets: GrinderPreset[];
 }
 

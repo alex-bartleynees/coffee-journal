@@ -9,6 +9,7 @@
 	import { formatDecimal } from '$lib/data/numbers';
 	import { beanById } from '$lib/data/sample';
 	import { methodLabel } from '$lib/data/methods';
+	import RetiredBadge from '$lib/components/RetiredBadge.svelte';
 
 	const grinders = $derived(journal.grinders);
 	const brews = $derived(journal.brews);
@@ -52,7 +53,7 @@
 			<div class="divider"></div>
 			<div class="stat"><div class="stat-n">{brews.length}</div><div class="stat-l">brews tracked</div></div>
 			<div class="divider"></div>
-			<div class="stat"><div class="stat-n">{Object.keys(counts).length}</div><div class="stat-l">in rotation</div></div>
+			<div class="stat"><div class="stat-n">{grinders.filter((grinder) => !grinder.retired).length}</div><div class="stat-l">in rotation</div></div>
 		</div>
 
 		<div class="section-label">Library</div>
@@ -67,7 +68,10 @@
 					<BurrIllustration type={g.type} size={64} />
 					<div class="grinder-info">
 						<div class="grinder-top">
-							<div class="grinder-name">{g.name}</div>
+							<div class="grinder-name">
+								{g.name}
+								{#if g.retired}<RetiredBadge />{/if}
+							</div>
 							<div class="grinder-count mono">{counts[g.id] || 0} brews</div>
 						</div>
 						<div class="grinder-burr">{g.burr}</div>
@@ -121,7 +125,12 @@
 	{#if selectedGrinder}
 		<div class="grinders-detail-pane">
 			<div class="desktop-detail-actions">
-				<DetailActionMenu editHref={`/grinders/new?edit=${selectedGrinder.id}`} label="Grinder actions" />
+				<DetailActionMenu
+					editHref={`/grinders/new?edit=${selectedGrinder.id}`}
+					label="Grinder actions"
+					onRetire={() => journal.toggleGrinderRetired(selectedGrinder.id)}
+					retired={selectedGrinder.retired}
+				/>
 			</div>
 			<GrinderDetail grinder={selectedGrinder} myBrews={selectedGrinderBrews} beanById={beans} />
 		</div>

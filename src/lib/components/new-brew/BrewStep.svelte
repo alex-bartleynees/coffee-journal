@@ -5,18 +5,21 @@
 	import Stepper from './Stepper.svelte';
 	import type { Grinder, Recipe } from '$lib/data/types';
 	import type { DraftBrew } from './DraftBrew';
+	import { brewEquipment } from '$lib/data/brew-equipment';
 
 	interface Props {
 		draft: DraftBrew;
 		grinders: Grinder[];
 		recipe?: Recipe;
+		includeGrinderId?: string;
 	}
 
-	let { draft, grinders, recipe }: Props = $props();
+	let { draft, grinders, recipe, includeGrinderId }: Props = $props();
 	let guiding = $state(false);
 
+	const availableGrinders = $derived(brewEquipment(grinders, includeGrinderId));
 	const ratio = $derived(draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—');
-	const grinder = $derived(grinders.find((g) => g.id === draft.grinder) ?? grinders[0]);
+	const grinder = $derived(availableGrinders.find((g) => g.id === draft.grinder) ?? availableGrinders[0]);
 </script>
 
 <div class="step">
@@ -65,7 +68,7 @@
 
 		<div class="section-label">Grinder</div>
 		<div class="grinder-chips">
-			{#each grinders as g (g.id)}
+			{#each availableGrinders as g (g.id)}
 				<button class="chip" class:active={draft.grinder === g.id} onclick={() => (draft.grinder = g.id)}>
 					{g.name}
 				</button>

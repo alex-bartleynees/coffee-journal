@@ -205,6 +205,16 @@ function updateMachine(updated: Machine): void {
 	sync.schedule();
 }
 
+function toggleGrinderRetired(id: string): void {
+	const grinder = grinders.find((candidate) => candidate.id === id);
+	if (grinder) updateGrinder({ ...grinder, retired: !grinder.retired });
+}
+
+function toggleMachineRetired(id: string): void {
+	const machine = machines.find((candidate) => candidate.id === id);
+	if (machine) updateMachine({ ...machine, retired: !machine.retired });
+}
+
 function deleteMachine(id: string): void {
 	machines = machines.filter((m) => m.id !== id);
 	softDeleteMachine(id).catch(console.error);
@@ -320,6 +330,8 @@ export const journal = {
 	finishBean,
 	updateGrinder,
 	updateMachine,
+	toggleGrinderRetired,
+	toggleMachineRetired,
 	updateMethod,
 	updateRecipe,
 	deleteBrew,

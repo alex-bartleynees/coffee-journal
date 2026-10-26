@@ -5,6 +5,7 @@
 	import Icon from '$lib/icons/Icon.svelte';
 	import { journal } from '$lib/stores/journal.svelte';
 	import { newId } from '$lib/data/id';
+	import RetirementToggle from '$lib/components/RetirementToggle.svelte';
 	import type { Grinder, GrinderType, Method } from '$lib/data/types';
 
 	const editId = $derived(page.url.searchParams.get('edit'));
@@ -20,6 +21,7 @@
 	let rangeMax = $state(40);
 	let step = $state(1);
 	let notes = $state('');
+	let retired = $state(false);
 	let presets = $state<{ method: Method; setting: number }[]>([]);
 
 	const canSave = $derived(name.trim().length > 0 && maker.trim().length > 0);
@@ -41,6 +43,7 @@
 		rangeMax = existingGrinder.range[1];
 		step = existingGrinder.step;
 		notes = existingGrinder.notes ?? '';
+		retired = existingGrinder.retired ?? false;
 		presets = existingGrinder.presets.map((preset) => ({ ...preset }));
 		initializedEditId = editId;
 	});
@@ -73,6 +76,7 @@
 			burr: burr.trim() || '—',
 			rpm,
 			notes: notes.trim() || undefined,
+			retired,
 			presets
 		};
 		if (existingGrinder) journal.updateGrinder(grinder);
@@ -145,6 +149,8 @@
 			<textarea class="field-input" rows="2" placeholder="Workhorse. Espresso 12–16…" bind:value={notes}
 			></textarea>
 		</div>
+
+		<RetirementToggle bind:retired noun="grinder" />
 
 		<div class="section-label">Presets</div>
 		<div class="presets">

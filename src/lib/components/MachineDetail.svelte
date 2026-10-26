@@ -3,6 +3,7 @@
 	import type { Bean, Brew, Machine } from '$lib/data/types';
 	import { methodLabel } from '$lib/data/methods';
 	import { journal } from '$lib/stores/journal.svelte';
+	import RetiredBadge from '$lib/components/RetiredBadge.svelte';
 	import { averageRating } from '$lib/data/ratings';
 
 	let { machine, myBrews, beanById: beans }: { machine: Machine; myBrews: Brew[]; beanById: Record<string, Bean> } =
@@ -20,6 +21,7 @@
 		</div>
 		<div class="hero-maker">{machine.maker}</div>
 		<h2 class="hero-name">{machine.name}</h2>
+		{#if machine.retired}<RetiredBadge variant="hero" />{/if}
 		<div class="hero-sub">{avgRating == null ? `${myBrews.length} brews` : `★ ${avgRating.toFixed(1)} avg · ${myBrews.length} brews`}</div>
 	</div>
 

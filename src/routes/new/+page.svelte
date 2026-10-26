@@ -7,6 +7,7 @@
 	import { brewFromDraft, brewSteps, createDraft, draftFromBrew, loadDraft, saveDraft, clearDraft } from '$lib/components/new-brew/DraftBrew';
 	import { newId } from '$lib/data/id';
 	import { todayIso } from '$lib/data/date';
+	import { brewSelection } from '$lib/data/brew-equipment';
 	import BeanStep from '$lib/components/new-brew/BeanStep.svelte';
 	import BrewStep from '$lib/components/new-brew/BrewStep.svelte';
 	import TasteStep from '$lib/components/new-brew/TasteStep.svelte';
@@ -42,6 +43,13 @@
 
 	$effect(() => {
 		if (tab >= steps.length) tab = steps.length - 1;
+	});
+
+	// Lives here rather than in BrewStep so a retired/unknown default grinder is
+	// replaced even when the brew is saved without visiting the Brew tab.
+	$effect(() => {
+		if (!journal.ready) return;
+		draft.grinder = brewSelection(journal.grinders, draft.grinder, existingBrew?.grinder);
 	});
 
 	$effect(() => {
@@ -132,9 +140,15 @@
 				machines={journal.machines}
 				recipes={journal.recipes}
 				includeBeanId={existingBrew?.beanId}
+				includeMachineId={existingBrew?.machine}
 			/>
 		{:else if tab === 1}
-			<BrewStep {draft} grinders={journal.grinders} recipe={selectedRecipe} />
+			<BrewStep
+				{draft}
+				grinders={journal.grinders}
+				recipe={selectedRecipe}
+				includeGrinderId={existingBrew?.grinder}
+			/>
 		{:else if tab === 2}
 			<TasteStep {draft} />
 		{:else if tab === 3}

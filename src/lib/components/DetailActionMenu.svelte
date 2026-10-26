@@ -2,11 +2,16 @@
 	import { onMount, tick } from 'svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 
-	let {
-		editHref,
-		label,
-		onDelete
-	}: { editHref: string; label: string; onDelete?: () => void } = $props();
+	interface Props {
+		editHref: string;
+		label: string;
+		onDelete?: () => void;
+		/** Shown as "Retire", or "Return to service" when `retired`. */
+		onRetire?: () => void;
+		retired?: boolean;
+	}
+
+	let { editHref, label, onDelete, onRetire, retired = false }: Props = $props();
 
 	let open = $state(false);
 	let root: HTMLDivElement;
@@ -27,6 +32,12 @@
 	function requestDelete() {
 		close();
 		if (onDelete && window.confirm('Delete this item? This cannot be undone.')) onDelete();
+	}
+
+	function toggleRetired() {
+		close();
+		if (!onRetire) return;
+		if (retired || window.confirm('Retire this item? It will no longer appear when logging a brew.')) onRetire();
 	}
 
 	onMount(() => {
@@ -61,6 +72,9 @@
 	{#if open}
 			<div class="menu" role="menu" aria-label={label}>
 				<a role="menuitem" href={editHref} onclick={() => close()}>Edit</a>
+				{#if onRetire}
+					<button role="menuitem" type="button" onclick={toggleRetired}>{retired ? 'Return to service' : 'Retire'}</button>
+				{/if}
 				{#if onDelete}
 					<button class="delete-item" role="menuitem" type="button" onclick={requestDelete}>Delete</button>
 				{/if}

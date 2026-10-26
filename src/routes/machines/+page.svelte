@@ -73,6 +73,8 @@
 				<DetailActionMenu
 					editHref={`/machines/new?edit=${selectedMachine.id}`}
 					label="Machine actions"
+					onRetire={() => journal.toggleMachineRetired(selectedMachine.id)}
+					retired={selectedMachine.retired}
 					onDelete={deleteSelectedMachine}
 				/>
 			</div>
