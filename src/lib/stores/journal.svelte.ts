@@ -37,13 +37,46 @@ let ready = $state(false);
 let persistent = $state(false);
 let error = $state<string | null>(null);
 
+/**
+ * Local writes are optimistic: the UI updates immediately and the SQLite write
+ * runs behind it. A failed write is kept here (with a way to re-run it) so the
+ * layout can warn that the change is only on screen and offer a retry, instead
+ * of the change silently vanishing on the next reload.
+ */
+type FailedWrite = { label: string; write: () => Promise<void> };
+let failedWrites = $state.raw<FailedWrite[]>([]);
+
+function persist(label: string, write: () => Promise<void>): void {
+	write().catch((e) => {
+		console.error(`Couldn't save ${label}`, e);
+		failedWrites = [...failedWrites, { label, write }];
+	});
+}
+
+/** Re-run failed writes in order; any that fail again stay queued. */
+async function retryFailedWrites(): Promise<void> {
+	const pending = failedWrites;
+	failedWrites = [];
+	const stillFailing: FailedWrite[] = [];
+	for (const failed of pending) {
+		try {
+			await failed.write();
+		} catch (e) {
+			console.error(`Couldn't save ${failed.label}`, e);
+			stillFailing.push(failed);
+		}
+	}
+	failedWrites = [...stillFailing, ...failedWrites];
+	if (stillFailing.length < pending.length) sync.schedule();
+}
+
 function finishConsumedBeans(): void {
 	beans = beans.map((bean) => {
 		if (bean.finished) return bean;
 		const doses = brews.filter((brew) => brew.beanId === bean.id).map((brew) => brew.doseIn);
 		if (!beanInventory(bean.bagWeight, doses).finished) return bean;
 		const finishedBean = { ...bean, finished: true };
-		insertBean(finishedBean).catch(console.error);
+		persist('bean', () => insertBean(finishedBean));
 		return finishedBean;
 	});
 }
@@ -116,19 +149,19 @@ function addBrew(brew: Brew): void {
 		beans = beans.map((b, i) => (i === idx ? { ...b, brews: b.brews + 1 } : b));
 	}
 	finishConsumedBeans();
-	insertBrew(brew).catch(console.error);
+	persist('brew', () => insertBrew(brew));
 	sync.schedule();
 }
 
 function addBean(bean: Bean): void {
 	beans = [bean, ...beans];
-	insertBean(bean).catch(console.error);
+	persist('bean', () => insertBean(bean));
 	sync.schedule();
 }
 
 function addGrinder(grinder: Grinder): void {
 	grinders = [...grinders, grinder].sort((a, b) => a.name.localeCompare(b.name));
-	insertGrinder(grinder).catch(console.error);
+	persist('grinder', () => insertGrinder(grinder));
 	sync.schedule();
 }
 
@@ -150,7 +183,7 @@ function updateBrew(updated: Brew): void {
 		});
 	}
 	finishConsumedBeans();
-	insertBrew(updated).catch(console.error);
+	persist('brew', () => insertBrew(updated));
 	sync.schedule();
 }
 
@@ -165,7 +198,7 @@ function updateBean(updated: Bean): void {
 			? { ...updated, brews: existing.brews, photoUrl: updated.photoUrl ?? existing.photoUrl }
 			: bean))
 		.sort((a, b) => b.dateOpened.localeCompare(a.dateOpened));
-	insertBean({ ...updated, brews: existing.brews }).catch(console.error);
+	persist('bean', () => insertBean({ ...updated, brews: existing.brews }));
 	sync.schedule();
 }
 
@@ -183,13 +216,13 @@ function updateGrinder(updated: Grinder): void {
 	grinders = grinders
 		.map((grinder) => (grinder.id === updated.id ? updated : grinder))
 		.sort((a, b) => a.name.localeCompare(b.name));
-	insertGrinder(updated).catch(console.error);
+	persist('grinder', () => insertGrinder(updated));
 	sync.schedule();
 }
 
 function addMachine(machine: Machine): void {
 	machines = [...machines, machine].sort((a, b) => a.name.localeCompare(b.name));
-	insertMachine(machine).catch(console.error);
+	persist('machine', () => insertMachine(machine));
 	sync.schedule();
 }
 
@@ -201,7 +234,7 @@ function updateMachine(updated: Machine): void {
 	machines = machines
 		.map((machine) => (machine.id === updated.id ? updated : machine))
 		.sort((a, b) => a.name.localeCompare(b.name));
-	insertMachine(updated).catch(console.error);
+	persist('machine', () => insertMachine(updated));
 	sync.schedule();
 }
 
@@ -217,13 +250,13 @@ function toggleMachineRetired(id: string): void {
 
 function deleteMachine(id: string): void {
 	machines = machines.filter((m) => m.id !== id);
-	softDeleteMachine(id).catch(console.error);
+	persist('machine', () => softDeleteMachine(id));
 	sync.schedule();
 }
 
 function addMethod(method: MethodDef): void {
 	methods = [...methods, method];
-	insertMethod(method).catch(console.error);
+	persist('method', () => insertMethod(method));
 	sync.schedule();
 }
 
@@ -233,19 +266,19 @@ function updateMethod(updated: MethodDef): void {
 		return;
 	}
 	methods = methods.map((method) => (method.id === updated.id ? updated : method));
-	insertMethod(updated).catch(console.error);
+	persist('method', () => insertMethod(updated));
 	sync.schedule();
 }
 
 function deleteMethod(id: string): void {
 	methods = methods.filter((m) => m.id !== id);
-	softDeleteMethod(id).catch(console.error);
+	persist('method', () => softDeleteMethod(id));
 	sync.schedule();
 }
 
 function addRecipe(recipe: Recipe): void {
 	recipes = [...recipes, recipe].sort((a, b) => a.name.localeCompare(b.name));
-	insertRecipe(recipe).catch(console.error);
+	persist('recipe', () => insertRecipe(recipe));
 	sync.schedule();
 }
 
@@ -257,13 +290,13 @@ function updateRecipe(updated: Recipe): void {
 	recipes = recipes
 		.map((recipe) => (recipe.id === updated.id ? updated : recipe))
 		.sort((a, b) => a.name.localeCompare(b.name));
-	insertRecipe(updated).catch(console.error);
+	persist('recipe', () => insertRecipe(updated));
 	sync.schedule();
 }
 
 function deleteRecipe(id: string): void {
 	recipes = recipes.filter((recipe) => recipe.id !== id);
-	softDeleteRecipe(id).catch(console.error);
+	persist('recipe', () => softDeleteRecipe(id));
 	sync.schedule();
 }
 
@@ -276,14 +309,14 @@ function deleteBrew(id: string): void {
 			beans = beans.map((b, i) => (i === idx ? { ...b, brews: Math.max(0, b.brews - 1) } : b));
 		}
 	}
-	softDeleteBrew(id).catch(console.error);
+	persist('brew', () => softDeleteBrew(id));
 	sync.schedule();
 }
 
 function deleteBean(id: string): void {
 	beans = beans.filter((b) => b.id !== id);
-	softDeleteBean(id).catch(console.error);
-	deleteBeanPhoto(id).catch(console.error);
+	persist('bean', () => softDeleteBean(id));
+	persist('bean photo', () => deleteBeanPhoto(id));
 	sync.schedule();
 }
 
@@ -303,7 +336,7 @@ async function removeBeanPhoto(beanId: string): Promise<void> {
 
 function deleteGrinder(id: string): void {
 	grinders = grinders.filter((g) => g.id !== id);
-	softDeleteGrinder(id).catch(console.error);
+	persist('grinder', () => softDeleteGrinder(id));
 	sync.schedule();
 }
 
@@ -317,6 +350,9 @@ export const journal = {
 	get ready() { return ready; },
 	get persistent() { return persistent; },
 	get error() { return error; },
+	/** Labels of local writes that failed and are only reflected in memory. */
+	get failedWrites() { return failedWrites.map((failed) => failed.label); },
+	retryFailedWrites,
 	init,
 	reload,
 	addBrew,

@@ -1,23 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import { SCHEMA_SQL } from './schema';
 import type { SyncRecord } from '$lib/sync/protocol';
 import type { Brew } from '$lib/data/types';
 import { calendarDate } from '$lib/data/date';
+import { resetMemoryDb } from './memory-db';
 
-// Run the real insert SQL against an in-memory SQLite instead of the OPFS worker.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let db: any;
-vi.mock('./index', () => ({
-	exec: async (sql: string, bind?: unknown[]) => {
-		db.exec({ sql, bind });
-	},
-	query: async (sql: string, bind?: unknown[]) => {
-		const rows: unknown[] = [];
-		db.exec({ sql, bind, rowMode: 'object', resultRows: rows });
-		return rows;
-	}
-}));
+vi.mock('./index', () => import('./memory-db'));
 
 const { applyRemoteRecord } = await import('./sync-queries');
 const { getAllBrews, getAllMachines, insertBrew } = await import('./queries');
@@ -33,12 +20,7 @@ const record = (entity: SyncRecord['entity'], id: string, updatedAt: number, pay
 });
 
 describe('sync record application', () => {
-	beforeEach(async () => {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const sqlite3 = await (sqlite3InitModule as any)();
-		db = new sqlite3.oo1.DB(':memory:', 'ct');
-		db.exec({ sql: SCHEMA_SQL });
-	});
+	beforeEach(resetMemoryDb);
 
 	it('applies a brew and a machine pulled from another device', async () => {
 		const options = [{ id: 'o1', label: 'Pre-infusion time', unit: 's', min: 0, max: 90, step: 1, default: 7 }];

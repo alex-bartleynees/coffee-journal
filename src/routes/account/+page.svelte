@@ -12,6 +12,7 @@
 		type SubscriptionState
 	} from '$lib/billing';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { sync } from '$lib/sync/engine.svelte';
 
 	let loading = $state(true);
 	let subscription = $state<SubscriptionState | null>(null);
@@ -69,6 +70,14 @@
 			<h1>Bloom Sync</h1>
 			{#if auth.email}<p>{auth.email}</p>{/if}
 		</header>
+
+		{#if sync.status === 'error' && sync.error}
+			<div class="state-card error-card sync-error-card" role="alert">
+				<strong>Sync failed</strong>
+				<span class="sync-error">{sync.error}</span>
+				<button class="text-button" type="button" onclick={() => sync.retry()}>Try again</button>
+			</div>
+		{/if}
 
 		{#if !auth.checked || loading}
 			<div class="state-card" role="status">Checking your membership…</div>
@@ -175,6 +184,8 @@
 	.attention-card { display: flex; flex-direction: column; gap: 6px; }
 	.error-card span,
 	.attention-card span { color: var(--ink-2); font-size: 13px; line-height: 1.45; }
+	.sync-error-card { margin-bottom: 14px; }
+	.error-card .sync-error { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
 	.attention-card { margin-bottom: 14px; border-color: var(--crema); background: var(--card-2); }
 	.text-button {
 		align-self: flex-start;

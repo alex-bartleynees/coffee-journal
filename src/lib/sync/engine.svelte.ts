@@ -199,6 +199,8 @@ export const sync = {
 	get lastSyncAt() { return lastSyncAt; },
 	get error() { return errorMessage; },
 	get subscriptionRequired() { return subscriptionRequired; },
+	/** Run a sync cycle now (e.g. a user-initiated retry). */
+	retry: () => runSync(),
 	start,
 	schedule,
 	onSignIn

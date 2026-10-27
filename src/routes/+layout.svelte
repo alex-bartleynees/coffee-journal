@@ -68,7 +68,28 @@
 		tabs.some((t) => t.match === page.url.pathname) || gearRoutes.includes(page.url.pathname)
 	);
 	const isGearActive = $derived(gearRoutes.includes(page.url.pathname));
+
+	const unsaved = $derived(journal.failedWrites);
+	const unsavedLabel = $derived(unsaved.length === 1 ? `your ${unsaved[0]}` : `${unsaved.length} changes`);
+	let retrying = $state(false);
+
+	async function retrySave() {
+		retrying = true;
+		try {
+			await journal.retryFailedWrites();
+		} finally {
+			retrying = false;
+		}
+	}
+
+	// Unsaved changes only exist in memory — warn before a reload/close discards them.
+	function warnBeforeUnload(event: BeforeUnloadEvent) {
+		if (unsaved.length === 0) return;
+		event.preventDefault();
+	}
 </script>
+
+<svelte:window onbeforeunload={warnBeforeUnload} />
 
 <svelte:head>
 	<title>Bloom - Coffee Journal</title>
@@ -81,6 +102,14 @@
 	</div>
 
 	<div class="app-main">
+		{#if unsaved.length > 0}
+			<div class="db-banner db-banner--error" role="alert">
+				Couldn't save {unsavedLabel}. {unsaved.length === 1 ? "It's" : "They're"} only on this screen and will be lost if you reload.
+				<button class="db-banner-action" type="button" onclick={retrySave} disabled={retrying}>
+					{retrying ? 'Retrying…' : 'Retry'}
+				</button>
+			</div>
+		{/if}
 		{#if journal.ready && journal.error}
 			<div class="db-banner db-banner--error" role="alert">
 				Couldn't load your saved data. Changes won't be kept this session.
@@ -136,6 +165,12 @@
 		font-size: 13px;
 		line-height: 1.4;
 		text-align: center;
+	}
+	.db-banner-action {
+		margin-left: 6px;
+		font-weight: 600;
+		text-decoration: underline;
+		color: inherit;
 	}
 	.db-banner--warn {
 		background: #fef3c7;
