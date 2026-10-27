@@ -7,10 +7,11 @@
  * `brews.milk_drink`; v8 made `brews.rating` nullable for Quick brew; v9 added
  * reusable `recipes` and optional `brews.recipe_id` provenance; v10 added the
  * canonical `brews.espresso_drink` final beverage; v11 added retirement flags
- * for machines and grinders — see
+ * for machines and grinders; v12 added per-machine `machines.brew_options` and
+ * the `brews.machine_settings` snapshot — see
  * [[Sync-Protocol]].
  */
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 /**
  * Sync-metadata columns present on every syncable table (beans/grinders/brews):
@@ -34,7 +35,8 @@ export const BREW_MIGRATION_COLUMNS: readonly [string, string][] = [
 	['machine', 'TEXT'],
 	['milk_drink', 'TEXT'],
 	['recipe_id', 'TEXT'],
-	['espresso_drink', 'TEXT']
+	['espresso_drink', 'TEXT'],
+	['machine_settings', 'TEXT']
 ];
 
 export const METHOD_MIGRATION_COLUMNS: readonly [string, string][] = [['notes', 'TEXT']];
@@ -42,6 +44,8 @@ export const METHOD_MIGRATION_COLUMNS: readonly [string, string][] = [['notes', 
 export const EQUIPMENT_MIGRATION_COLUMNS: readonly [string, string][] = [
 	['retired', 'INTEGER NOT NULL DEFAULT 0']
 ];
+
+export const MACHINE_MIGRATION_COLUMNS: readonly [string, string][] = [['brew_options', "TEXT NOT NULL DEFAULT '[]'"]];
 
 export const PHOTO_SYNC_COLUMNS: readonly [string, string][] = [
 	['deleted', 'INTEGER NOT NULL DEFAULT 0'],
@@ -112,6 +116,7 @@ export const SCHEMA_SQL = `
 		method     TEXT,
 		notes      TEXT,
 		retired    INTEGER NOT NULL DEFAULT 0,
+		brew_options TEXT NOT NULL DEFAULT '[]',
 		updated_at INTEGER NOT NULL DEFAULT 0,
 		deleted    INTEGER NOT NULL DEFAULT 0,
 		dirty      INTEGER NOT NULL DEFAULT 0
@@ -152,6 +157,7 @@ export const SCHEMA_SQL = `
 		time            TEXT NOT NULL,
 		grinder         TEXT NOT NULL,
 		machine         TEXT,
+		machine_settings TEXT,
 		grind_setting   REAL NOT NULL,
 		dose_in         REAL NOT NULL,
 		yield_out       REAL NOT NULL,

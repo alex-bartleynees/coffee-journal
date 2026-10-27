@@ -6,7 +6,9 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import { newId } from '$lib/data/id';
 	import RetirementToggle from '$lib/components/RetirementToggle.svelte';
-	import type { Machine } from '$lib/data/types';
+	import BrewOptionsEditor from '$lib/components/BrewOptionsEditor.svelte';
+	import { isValidBrewOption, normalizeBrewOption } from '$lib/data/machine-options';
+	import type { Machine, MachineBrewOption } from '$lib/data/types';
 
 	const editId = $derived(page.url.searchParams.get('edit'));
 	const existingMachine = $derived(editId ? journal.machines.find((machine) => machine.id === editId) : undefined);
@@ -19,9 +21,12 @@
 	let method = $state('');
 	let notes = $state('');
 	let retired = $state(false);
+	let brewOptions = $state<MachineBrewOption[]>([]);
 	let initializedCreateMethod = false;
 
-	const canSave = $derived(name.trim().length > 0 && maker.trim().length > 0);
+	const canSave = $derived(
+		name.trim().length > 0 && maker.trim().length > 0 && brewOptions.every(isValidBrewOption)
+	);
 
 	$effect(() => {
 		if (!editId || !existingMachine || initializedEditId === editId) return;
@@ -31,6 +36,7 @@
 		method = existingMachine.method ?? '';
 		notes = existingMachine.notes ?? '';
 		retired = existingMachine.retired ?? false;
+		brewOptions = (existingMachine.brewOptions ?? []).map((option) => ({ ...option }));
 		initializedEditId = editId;
 	});
 
@@ -60,6 +66,7 @@
 			type: type.trim() || '—',
 			method: method || undefined,
 			notes: notes.trim() || undefined,
+			brewOptions: brewOptions.map(normalizeBrewOption),
 			retired
 		};
 		if (existingMachine) journal.updateMachine(machine);
@@ -113,6 +120,8 @@
 			<textarea class="field-input" rows="2" placeholder="Main workhorse, descaled Feb 2026…" bind:value={notes}
 			></textarea>
 		</div>
+
+		<BrewOptionsEditor bind:options={brewOptions} />
 
 		<RetirementToggle bind:retired noun="machine" />
 	</div>

@@ -18,6 +18,7 @@
 	let tab = $state(0);
 	const draft = $state(createDraft(journal.beans[0]?.id ?? ''));
 	const selectedRecipe = $derived(draft.recipeId ? journal.recipes.find((recipe) => recipe.id === draft.recipeId) : undefined);
+	const selectedMachine = $derived(draft.machine ? journal.machines.find((machine) => machine.id === draft.machine) : undefined);
 	const steps = $derived(brewSteps(draft.quickBrew));
 	let initializedEditId: string | null = null;
 
@@ -79,7 +80,11 @@
 			id: existingBrew?.id ?? newId('br'),
 			date: existingBrew?.date ?? todayIso(),
 			time: existingBrew?.time ?? new Date().toTimeString().slice(0, 5)
-		});
+		}, selectedMachine);
+		// The machine was deleted since this brew — keep its recorded settings as-is.
+		if (existingBrew && !selectedMachine && draft.machine === (existingBrew.machine ?? null)) {
+			brew.machineSettings = existingBrew.machineSettings;
+		}
 		if (existingBrew) journal.updateBrew(brew);
 		else {
 			journal.addBrew(brew);
@@ -147,6 +152,7 @@
 				{draft}
 				grinders={journal.grinders}
 				recipe={selectedRecipe}
+				machine={selectedMachine}
 				includeGrinderId={existingBrew?.grinder}
 			/>
 		{:else if tab === 2}

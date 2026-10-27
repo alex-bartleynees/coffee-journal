@@ -5,6 +5,7 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import RetiredBadge from '$lib/components/RetiredBadge.svelte';
 	import { averageRating } from '$lib/data/ratings';
+	import { formatSetting } from '$lib/data/machine-options';
 
 	let { machine, myBrews, beanById: beans }: { machine: Machine; myBrews: Brew[]; beanById: Record<string, Bean> } =
 		$props();
@@ -27,6 +28,21 @@
 
 	{#if machine.notes}
 		<div class="notes-card">{machine.notes}</div>
+	{/if}
+
+	{#if machine.brewOptions?.length}
+		<div class="section-label">Brew options</div>
+		<div class="options-card">
+			{#each machine.brewOptions as option (option.id)}
+				<div class="option-row">
+					<span>{option.label}</span>
+					<span class="option-range">
+						{option.min}–{formatSetting({ value: option.max, unit: option.unit })}
+						· default {option.default}
+					</span>
+				</div>
+			{/each}
+		</div>
 	{/if}
 
 	<div class="section-label">Brews on this machine</div>
@@ -99,6 +115,27 @@
 		font-size: 14px;
 		line-height: 1.5;
 		color: var(--ink-2);
+	}
+	.options-card {
+		margin: 0 16px 16px;
+		padding: 4px 14px;
+		background: var(--card);
+		border: 1px solid var(--line-soft);
+		border-radius: var(--r-md);
+	}
+	.option-row {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 0;
+		font-size: 13px;
+	}
+	.option-row + .option-row {
+		border-top: 1px solid var(--line-soft);
+	}
+	.option-range {
+		color: var(--ink-3);
+		font-size: 12px;
 	}
 	.brew-log {
 		padding: 0 16px 24px;

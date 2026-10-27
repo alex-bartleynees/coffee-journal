@@ -2,6 +2,7 @@ import { exec, query } from './index';
 import { calendarDate } from '$lib/data/date';
 import type { Bean, Brew, Grinder, Machine, Method, MethodDef, Recipe, RecipeStep } from '$lib/data/types';
 import type { IconName } from '$lib/icons/Icon.svelte';
+import { parseBrewOptions, parseMachineSettings } from '$lib/data/machine-options';
 
 /**
  * Sync bookkeeping stamped onto every row write. Local (user-originated) writes
@@ -24,7 +25,7 @@ export type BeanRow = {
 
 export type BrewRow = {
 	id: string; bean_id: string; method: string; date: string; time: string;
-	grinder: string; machine: string | null; grind_setting: number; dose_in: number; yield_out: number;
+	grinder: string; machine: string | null; machine_settings: string | null; grind_setting: number; dose_in: number; yield_out: number;
 	extraction_time: number; temperature: number; ratio: string; rating: number | null;
 	rating2: number | null; aroma: string | null; flavor: string | null;
 	body: string | null; finish: string | null; descriptors: string | null;
@@ -43,6 +44,7 @@ export type GrinderRow = {
 export type PresetRow = { grinder_id: string; method: string; setting: number };
 export type MachineRow = {
 	id: string; name: string; maker: string; type: string; method: string | null; notes: string | null; retired: number;
+	brew_options: string | null;
 };
 export type MethodRow = { id: string; label: string; icon: string; notes: string | null };
 export type RecipeRow = {
@@ -86,6 +88,7 @@ export function brewFromRow(r: BrewRow): Brew {
 		ratio: r.ratio, rating: r.rating, rating2: r.rating2 ?? null
 	};
 	if (r.machine != null) brew.machine = r.machine;
+	if (r.machine_settings != null) brew.machineSettings = parseMachineSettings(r.machine_settings);
 	if (r.aroma != null) brew.aroma = r.aroma;
 	if (r.flavor != null) brew.flavor = r.flavor;
 	if (r.body != null) brew.body = r.body;
@@ -120,6 +123,7 @@ export function machineFromRow(r: MachineRow): Machine {
 	const m: Machine = { id: r.id, name: r.name, maker: r.maker, type: r.type, retired: !!r.retired };
 	if (r.method != null) m.method = r.method;
 	if (r.notes != null) m.notes = r.notes;
+	m.brewOptions = parseBrewOptions(r.brew_options);
 	return m;
 }
 
@@ -282,13 +286,16 @@ export async function getAllRecipes(): Promise<Recipe[]> {
 export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()): Promise<void> {
 	await exec(
 		`INSERT OR REPLACE INTO brews
-			(id, bean_id, method, date, time, grinder, machine, grind_setting, dose_in, yield_out,
+			(id, bean_id, method, date, time, grinder, machine, machine_settings, grind_setting, dose_in, yield_out,
 			 extraction_time, temperature, ratio, rating, rating2, aroma, flavor, body, finish,
 			 descriptors, with_milk, milk_drink, espresso_drink, cuts_thru_milk, buy_again, best_for, recipe_notes,
 			 recipe_id, favorite, updated_at, deleted, dirty)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		VALUES (?,?,?,?,?,?,?,
+			COALESCE(?, (SELECT machine_settings FROM brews WHERE id = ?)),
+			?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
 			brew.id, brew.beanId, brew.method, brew.date, brew.time, brew.grinder, brew.machine ?? null,
+			jsonOrNull(brew.machineSettings), brew.id,
 			brew.grindSetting, brew.doseIn, brew.yieldOut, brew.extractionTime,
 			brew.temperature, brew.ratio, brew.rating, brew.rating2 ?? null,
 			brew.aroma ?? null, brew.flavor ?? null, brew.body ?? null, brew.finish ?? null,
@@ -329,6 +336,14 @@ function retiredFlag(retired: boolean | undefined): number | null {
 	return retired == null ? null : retired ? 1 : 0;
 }
 
+/**
+ * Like retiredFlag: an absent field (a record from an older client) is null so the
+ * insert keeps the stored value instead of wiping it.
+ */
+function jsonOrNull(value: unknown[] | undefined): string | null {
+	return value == null ? null : JSON.stringify(value);
+}
+
 export async function insertGrinder(grinder: Grinder, meta: SyncMeta = localWriteMeta()): Promise<void> {
 	await exec(
 		`INSERT OR REPLACE INTO grinders
@@ -356,13 +371,15 @@ export async function insertGrinder(grinder: Grinder, meta: SyncMeta = localWrit
 export async function insertMachine(machine: Machine, meta: SyncMeta = localWriteMeta()): Promise<void> {
 	await exec(
 		`INSERT OR REPLACE INTO machines
-			(id, name, maker, type, method, notes, retired, updated_at, deleted, dirty)
+			(id, name, maker, type, method, notes, retired, brew_options, updated_at, deleted, dirty)
 		VALUES (?,?,?,?,?,?,
 			COALESCE(?, (SELECT retired FROM machines WHERE id = ?), 0),
+			COALESCE(?, (SELECT brew_options FROM machines WHERE id = ?), '[]'),
 			?,?,?)`,
 		[
 			machine.id, machine.name, machine.maker, machine.type, machine.method ?? null,
 			machine.notes ?? null, retiredFlag(machine.retired), machine.id,
+			jsonOrNull(machine.brewOptions), machine.id,
 			meta.updatedAt, meta.deleted, meta.dirty
 		]
 	);

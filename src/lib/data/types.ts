@@ -37,6 +37,31 @@ export interface Recipe {
 	steps: RecipeStep[];
 }
 
+/**
+ * A numeric setting a machine exposes per brew (e.g. pre-infusion time/power on
+ * a Breville Dual Boiler). Defined on the machine, offered on the Brew step.
+ */
+export interface MachineBrewOption {
+	id: string;
+	label: string;
+	unit?: string;
+	min: number;
+	max: number;
+	step: number;
+	default: number;
+}
+
+/**
+ * A machine option's value on a brew. Label/unit are copied in so the brew stays
+ * a readable snapshot even if the machine's options are later edited or removed.
+ */
+export interface MachineSetting {
+	optionId: string;
+	label: string;
+	unit?: string;
+	value: number;
+}
+
 export interface Machine {
 	id: string;
 	name: string;
@@ -47,6 +72,8 @@ export interface Machine {
 	/** Optional — a machine can be added before its method is decided, or reassigned later. */
 	method?: string;
 	notes?: string;
+	/** Per-brew settings offered on the Brew step when this machine is selected. */
+	brewOptions?: MachineBrewOption[];
 }
 
 export interface Bean {
@@ -98,6 +125,8 @@ export interface Brew {
 	grinder: string;
 	/** Espresso machine / pourover device used, if any — references a Machine.id. */
 	machine?: string;
+	/** Values for the machine's brew options at the time of the brew. */
+	machineSettings?: MachineSetting[];
 	grindSetting: number;
 	doseIn: number;
 	yieldOut: number;

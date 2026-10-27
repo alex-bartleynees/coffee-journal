@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Brew } from '$lib/data/types';
+import type { Brew, Machine } from '$lib/data/types';
 import { calendarDate } from '$lib/data/date';
 import { brewFromDraft, brewSteps, createDraft, draftFromBrew } from './DraftBrew';
 
@@ -94,5 +94,46 @@ describe('brew measurement precision', () => {
 		const brew = brewFromDraft(draft, { id: 'brew-1', date: calendarDate('2026-08-19'), time: '08:00' });
 
 		expect(brew).toMatchObject({ doseIn: 18.2, yieldOut: 38.1, grindSetting: 2.1, temperature: 92.5 });
+	});
+});
+
+describe('machine settings draft state', () => {
+	const machine: Machine = {
+		id: 'm1', name: 'Dual Boiler', maker: 'Breville', type: 'dual-boiler',
+		brewOptions: [
+			{ id: 'pi-time', label: 'Pre-infusion time', unit: 's', min: 0, max: 15, step: 1, default: 7 },
+			{ id: 'pi-power', label: 'Pre-infusion power', unit: '%', min: 55, max: 99, step: 1, default: 60 }
+		]
+	};
+
+	it('snapshots the selected machine options, using defaults for untouched ones', () => {
+		const draft = createDraft('bean-1');
+		Object.assign(draft, { machine: 'm1', machineSettings: { 'pi-time': 10 } });
+
+		const brew = brewFromDraft(draft, { id: 'brew-1', date: calendarDate('2026-08-28'), time: '08:00' }, machine);
+
+		expect(brew.machineSettings).toEqual([
+			{ optionId: 'pi-time', label: 'Pre-infusion time', unit: 's', value: 10 },
+			{ optionId: 'pi-power', label: 'Pre-infusion power', unit: '%', value: 60 }
+		]);
+	});
+
+	it('drops settings left over from a previously selected machine', () => {
+		const draft = createDraft('bean-1');
+		Object.assign(draft, { machine: 'm2', machineSettings: { 'pi-time': 10 } });
+
+		const brew = brewFromDraft(draft, { id: 'brew-1', date: calendarDate('2026-08-28'), time: '08:00' }, { ...machine, id: 'm2', brewOptions: [] });
+
+		expect(brew.machineSettings).toEqual([]);
+	});
+
+	it('restores recorded settings when editing a brew', () => {
+		const draft = draftFromBrew({
+			method: 'espresso',
+			machine: 'm1',
+			machineSettings: [{ optionId: 'pi-time', label: 'Pre-infusion time', unit: 's', value: 4 }]
+		} as Brew);
+
+		expect(draft.machineSettings).toEqual({ 'pi-time': 4 });
 	});
 });

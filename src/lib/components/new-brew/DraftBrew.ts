@@ -1,4 +1,5 @@
-import type { Brew, EspressoDrink, Method, MilkDrink } from '$lib/data/types';
+import type { Brew, EspressoDrink, Machine, Method, MilkDrink } from '$lib/data/types';
+import { machineSettingsSnapshot, settingValues } from '$lib/data/machine-options';
 import { espressoDrinkForBrew } from '$lib/data/espresso-drinks';
 import type { CalendarDate } from '$lib/data/date';
 import { roundDecimal } from '$lib/data/numbers';
@@ -12,6 +13,8 @@ export interface DraftBrew {
 	milkDrink: MilkDrink | null;
 	espressoDrink: EspressoDrink | null;
 	machine: string | null;
+	/** Machine brew-option values keyed by option id; missing ids use the option default. */
+	machineSettings: Record<string, number>;
 	grinder: string;
 	grindSetting: number;
 	doseIn: number;
@@ -41,6 +44,7 @@ export function createDraft(beanId: string): DraftBrew {
 		milkDrink: null,
 		espressoDrink: 'Espresso',
 		machine: null,
+		machineSettings: {},
 		grinder: 'g1',
 		grindSetting: 14,
 		doseIn: 18,
@@ -71,6 +75,7 @@ export function draftFromBrew(brew: Brew): DraftBrew {
 		milkDrink: brew.milkDrink ?? (brew.withMilk ? 'Flat White' : null),
 		espressoDrink: espressoDrinkForBrew(brew),
 		machine: brew.machine ?? null,
+		machineSettings: settingValues(brew.machineSettings),
 		grinder: brew.grinder,
 		grindSetting: brew.grindSetting,
 		doseIn: brew.doseIn,
@@ -104,7 +109,8 @@ export function brewSteps(quickBrew: boolean) {
 
 export function brewFromDraft(
 	draft: DraftBrew,
-	identity: { id: string; date: CalendarDate; time: string }
+	identity: { id: string; date: CalendarDate; time: string },
+	machine?: Machine
 ): Brew {
 	const withMilk = draft.method === 'espresso' && draft.withMilk;
 	const shared = {
@@ -118,12 +124,13 @@ export function brewFromDraft(
 		recipeNotes: draft.recipeNotes.trim() || undefined,
 		recipeId: draft.recipeId ?? undefined,
 		machine: draft.machine ?? undefined,
+		machineSettings: machineSettingsSnapshot(machine, draft.machineSettings),
 		withMilk,
 		milkDrink: withMilk ? draft.milkDrink : null,
 		espressoDrink: draft.method === 'espresso' ? draft.espressoDrink : null,
 		cutsThruMilk: withMilk ? draft.cutsThruMilk : false
 	};
-	delete (shared as Partial<DraftBrew>).quickBrew;
+	delete (shared as { quickBrew?: boolean }).quickBrew;
 
 	if (!draft.quickBrew) {
 		return {

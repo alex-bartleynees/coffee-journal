@@ -3,18 +3,21 @@
 	import GuidedBrew from './GuidedBrew.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import Stepper from './Stepper.svelte';
-	import type { Grinder, Recipe } from '$lib/data/types';
+	import type { Grinder, Machine, Recipe } from '$lib/data/types';
 	import type { DraftBrew } from './DraftBrew';
 	import { brewEquipment } from '$lib/data/brew-equipment';
+	import { optionValue, stepDecimals } from '$lib/data/machine-options';
 
 	interface Props {
 		draft: DraftBrew;
 		grinders: Grinder[];
 		recipe?: Recipe;
+		machine?: Machine;
 		includeGrinderId?: string;
 	}
 
-	let { draft, grinders, recipe, includeGrinderId }: Props = $props();
+	let { draft, grinders, recipe, machine, includeGrinderId }: Props = $props();
+	const machineOptions = $derived(machine?.brewOptions ?? []);
 	let guiding = $state(false);
 
 	const availableGrinders = $derived(brewEquipment(grinders, includeGrinderId));
@@ -65,6 +68,24 @@
 				></textarea>
 			</div>
 		</div>
+
+		{#if machine && machineOptions.length > 0}
+			<div class="section-label">{machine.name}</div>
+			<div class="machine-options">
+				{#each machineOptions as option (option.id)}
+					<Stepper
+						label={option.label}
+						value={optionValue(option, draft.machineSettings)}
+						unit={option.unit}
+						step={option.step}
+						decimals={stepDecimals(option.step)}
+						min={option.min}
+						max={option.max}
+						onChange={(v) => (draft.machineSettings[option.id] = v)}
+					/>
+				{/each}
+			</div>
+		{/if}
 
 		<div class="section-label">Grinder</div>
 		<div class="grinder-chips">
@@ -131,6 +152,12 @@
 		font-size: 16px;
 		font-weight: 600;
 		color: var(--ink);
+	}
+	.machine-options {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+		margin-bottom: 12px;
 	}
 	.grinder-chips {
 		display: flex;

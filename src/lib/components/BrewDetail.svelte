@@ -10,6 +10,7 @@
   import { ratingLabel } from "$lib/data/ratings";
   import { formatDecimal, formatRatio } from "$lib/data/numbers";
   import { espressoDrinkForBrew, espressoDrinkLabel, isMilkEspressoDrink } from "$lib/data/espresso-drinks";
+  import { formatSetting } from "$lib/data/machine-options";
 
   let {
     brew,
@@ -131,10 +132,13 @@
     </div>
   </div>
 
-  {#if machine}
+  {#if machine || brew.machineSettings?.length}
     <div class="machine-strip">
       <Icon name="machine" size={14} />
-      <span>{machine.name}</span>
+      {#if machine}<span>{machine.name}</span>{/if}
+      {#each brew.machineSettings ?? [] as setting (setting.optionId)}
+        <span class="machine-setting">{setting.label} <strong>{formatSetting(setting)}</strong></span>
+      {/each}
     </div>
   {/if}
 
@@ -307,9 +311,21 @@
     border-radius: var(--r-sm);
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     font-size: 12px;
     color: var(--ink-2);
+  }
+  .machine-setting {
+    color: var(--ink-3);
+  }
+  span + .machine-setting::before {
+    content: "·";
+    margin-right: 8px;
+  }
+  .machine-setting strong {
+    color: var(--ink);
+    font-weight: 600;
   }
   .recipe-notes {
     margin: 10px 16px 0;
