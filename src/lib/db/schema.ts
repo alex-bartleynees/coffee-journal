@@ -8,10 +8,11 @@
  * reusable `recipes` and optional `brews.recipe_id` provenance; v10 added the
  * canonical `brews.espresso_drink` final beverage; v11 added retirement flags
  * for machines and grinders; v12 added per-machine `machines.brew_options` and
- * the `brews.machine_settings` snapshot — see
+ * the `brews.machine_settings` snapshot; v13 added `water_profiles` and the
+ * `brews.water_profile` / `brews.mineral_doses` snapshot — see
  * [[Sync-Protocol]].
  */
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 /**
  * Sync-metadata columns present on every syncable table (beans/grinders/brews):
@@ -27,7 +28,7 @@ export const SYNC_COLUMNS: readonly [string, string][] = [
 ];
 
 /** Tables that participate in sync (grinder_presets travel inside their grinder). */
-export const SYNCABLE_TABLES = ['beans', 'grinders', 'brews', 'machines', 'methods', 'recipes'] as const;
+export const SYNCABLE_TABLES = ['beans', 'grinders', 'brews', 'machines', 'methods', 'recipes', 'water_profiles'] as const;
 
 /** Brew columns added after the initial schema, used to upgrade existing DBs. */
 export const BREW_MIGRATION_COLUMNS: readonly [string, string][] = [
@@ -36,7 +37,9 @@ export const BREW_MIGRATION_COLUMNS: readonly [string, string][] = [
 	['milk_drink', 'TEXT'],
 	['recipe_id', 'TEXT'],
 	['espresso_drink', 'TEXT'],
-	['machine_settings', 'TEXT']
+	['machine_settings', 'TEXT'],
+	['water_profile', 'TEXT'],
+	['mineral_doses', 'TEXT']
 ];
 
 export const METHOD_MIGRATION_COLUMNS: readonly [string, string][] = [['notes', 'TEXT']];
@@ -149,6 +152,21 @@ export const SCHEMA_SQL = `
 		dirty       INTEGER NOT NULL DEFAULT 0
 	);
 
+	CREATE TABLE IF NOT EXISTS water_profiles (
+		id         TEXT PRIMARY KEY,
+		name       TEXT NOT NULL,
+		base       TEXT,
+		gh         REAL,
+		kh         REAL,
+		tds        REAL,
+		notes      TEXT,
+		retired    INTEGER NOT NULL DEFAULT 0,
+		additions  TEXT NOT NULL DEFAULT '[]',
+		updated_at INTEGER NOT NULL DEFAULT 0,
+		deleted    INTEGER NOT NULL DEFAULT 0,
+		dirty      INTEGER NOT NULL DEFAULT 0
+	);
+
 	CREATE TABLE IF NOT EXISTS brews (
 		id              TEXT PRIMARY KEY,
 		bean_id         TEXT NOT NULL,
@@ -158,6 +176,8 @@ export const SCHEMA_SQL = `
 		grinder         TEXT NOT NULL,
 		machine         TEXT,
 		machine_settings TEXT,
+		water_profile   TEXT,
+		mineral_doses   TEXT,
 		grind_setting   REAL NOT NULL,
 		dose_in         REAL NOT NULL,
 		yield_out       REAL NOT NULL,

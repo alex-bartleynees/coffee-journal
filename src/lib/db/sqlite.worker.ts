@@ -79,6 +79,7 @@ function makeBrewRatingNullable(database: Db): void {
 		CREATE TABLE brews_v8 (
 			id TEXT PRIMARY KEY, bean_id TEXT NOT NULL, method TEXT NOT NULL,
 			date TEXT NOT NULL, time TEXT NOT NULL, grinder TEXT NOT NULL, machine TEXT, machine_settings TEXT,
+			water_profile TEXT, mineral_doses TEXT,
 			grind_setting REAL NOT NULL, dose_in REAL NOT NULL, yield_out REAL NOT NULL,
 			extraction_time REAL NOT NULL, temperature REAL NOT NULL, ratio TEXT NOT NULL,
 			rating REAL, rating2 REAL, aroma TEXT, flavor TEXT, body TEXT, finish TEXT,
@@ -88,13 +89,13 @@ function makeBrewRatingNullable(database: Db): void {
 			deleted INTEGER NOT NULL DEFAULT 0, dirty INTEGER NOT NULL DEFAULT 0
 		);
 		INSERT INTO brews_v8 (
-			id, bean_id, method, date, time, grinder, machine, machine_settings, grind_setting, dose_in,
+			id, bean_id, method, date, time, grinder, machine, machine_settings, water_profile, mineral_doses, grind_setting, dose_in,
 			yield_out, extraction_time, temperature, ratio, rating, rating2, aroma,
 			flavor, body, finish, descriptors, with_milk, milk_drink, espresso_drink, cuts_thru_milk,
 			buy_again, best_for, recipe_notes, recipe_id, favorite, updated_at, deleted, dirty
 		)
 		SELECT
-			id, bean_id, method, date, time, grinder, machine, machine_settings, grind_setting, dose_in,
+			id, bean_id, method, date, time, grinder, machine, machine_settings, water_profile, mineral_doses, grind_setting, dose_in,
 			yield_out, extraction_time, temperature, ratio, rating, rating2, aroma,
 			flavor, body, finish, descriptors, with_milk, milk_drink, espresso_drink, cuts_thru_milk,
 			buy_again, best_for, recipe_notes, recipe_id, favorite, updated_at, deleted, dirty

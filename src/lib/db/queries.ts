@@ -1,8 +1,9 @@
 import { exec, query } from './index';
 import { calendarDate } from '$lib/data/date';
-import type { Bean, Brew, Grinder, Machine, Method, MethodDef, Recipe, RecipeStep } from '$lib/data/types';
+import type { Bean, Brew, Grinder, Machine, Method, MethodDef, Recipe, RecipeStep, WaterProfile } from '$lib/data/types';
 import type { IconName } from '$lib/icons/Icon.svelte';
 import { parseBrewOptions, parseMachineSettings } from '$lib/data/machine-options';
+import { parseMineralAdditions, parseMineralDoses } from '$lib/data/water';
 
 /**
  * Sync bookkeeping stamped onto every row write. Local (user-originated) writes
@@ -25,7 +26,8 @@ export type BeanRow = {
 
 export type BrewRow = {
 	id: string; bean_id: string; method: string; date: string; time: string;
-	grinder: string; machine: string | null; machine_settings: string | null; grind_setting: number; dose_in: number; yield_out: number;
+	grinder: string; machine: string | null; machine_settings: string | null;
+	water_profile: string | null; mineral_doses: string | null; grind_setting: number; dose_in: number; yield_out: number;
 	extraction_time: number; temperature: number; ratio: string; rating: number | null;
 	rating2: number | null; aroma: string | null; flavor: string | null;
 	body: string | null; finish: string | null; descriptors: string | null;
@@ -47,6 +49,10 @@ export type MachineRow = {
 	brew_options: string | null;
 };
 export type MethodRow = { id: string; label: string; icon: string; notes: string | null };
+export type WaterProfileRow = {
+	id: string; name: string; base: string | null; gh: number | null; kh: number | null; tds: number | null;
+	notes: string | null; retired: number; additions: string | null;
+};
 export type RecipeRow = {
 	id: string; method_id: string; name: string; bean_id: string | null;
 	dose_in: number; yield_out: number; temperature: number; grind: string | null;
@@ -89,6 +95,8 @@ export function brewFromRow(r: BrewRow): Brew {
 	};
 	if (r.machine != null) brew.machine = r.machine;
 	if (r.machine_settings != null) brew.machineSettings = parseMachineSettings(r.machine_settings);
+	if (r.water_profile != null) brew.waterProfile = r.water_profile;
+	if (r.mineral_doses != null) brew.mineralDoses = parseMineralDoses(r.mineral_doses);
 	if (r.aroma != null) brew.aroma = r.aroma;
 	if (r.flavor != null) brew.flavor = r.flavor;
 	if (r.body != null) brew.body = r.body;
@@ -125,6 +133,16 @@ export function machineFromRow(r: MachineRow): Machine {
 	if (r.notes != null) m.notes = r.notes;
 	m.brewOptions = parseBrewOptions(r.brew_options);
 	return m;
+}
+
+export function waterProfileFromRow(r: WaterProfileRow): WaterProfile {
+	const w: WaterProfile = { id: r.id, name: r.name, retired: !!r.retired, additions: parseMineralAdditions(r.additions) };
+	if (r.base != null) w.base = r.base;
+	if (r.gh != null) w.gh = r.gh;
+	if (r.kh != null) w.kh = r.kh;
+	if (r.tds != null) w.tds = r.tds;
+	if (r.notes != null) w.notes = r.notes;
+	return w;
 }
 
 export function methodFromRow(r: MethodRow): MethodDef {
@@ -273,6 +291,11 @@ export async function getAllMachines(): Promise<Machine[]> {
 	return rows.map(machineFromRow);
 }
 
+export async function getAllWaterProfiles(): Promise<WaterProfile[]> {
+	const rows = await query<WaterProfileRow>('SELECT * FROM water_profiles WHERE deleted = 0 ORDER BY name');
+	return rows.map(waterProfileFromRow);
+}
+
 export async function getAllMethods(): Promise<MethodDef[]> {
 	const rows = await query<MethodRow>('SELECT * FROM methods WHERE deleted = 0 ORDER BY rowid');
 	return rows.map(methodFromRow);
@@ -286,16 +309,24 @@ export async function getAllRecipes(): Promise<Recipe[]> {
 export async function insertBrew(brew: Brew, meta: SyncMeta = localWriteMeta()): Promise<void> {
 	await exec(
 		`INSERT OR REPLACE INTO brews
-			(id, bean_id, method, date, time, grinder, machine, machine_settings, grind_setting, dose_in, yield_out,
+			(id, bean_id, method, date, time, grinder, machine, machine_settings, water_profile, mineral_doses,
+			 grind_setting, dose_in, yield_out,
 			 extraction_time, temperature, ratio, rating, rating2, aroma, flavor, body, finish,
 			 descriptors, with_milk, milk_drink, espresso_drink, cuts_thru_milk, buy_again, best_for, recipe_notes,
 			 recipe_id, favorite, updated_at, deleted, dirty)
 		VALUES (?,?,?,?,?,?,?,
 			COALESCE(?, (SELECT machine_settings FROM brews WHERE id = ?)),
+			CASE WHEN ? IS NULL THEN (SELECT water_profile FROM brews WHERE id = ?) ELSE ? END,
+			COALESCE(?, (SELECT mineral_doses FROM brews WHERE id = ?)),
 			?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
 			brew.id, brew.beanId, brew.method, brew.date, brew.time, brew.grinder, brew.machine ?? null,
 			jsonOrNull(brew.machineSettings), brew.id,
+			// Clients from schema v13 on always send mineralDoses (possibly empty), so a
+			// missing array marks an older client — keep the stored water rather than
+			// clearing it. A newer client choosing "no water" sends [] and clears it.
+			jsonOrNull(brew.mineralDoses), brew.id, brew.waterProfile ?? null,
+			jsonOrNull(brew.mineralDoses), brew.id,
 			brew.grindSetting, brew.doseIn, brew.yieldOut, brew.extractionTime,
 			brew.temperature, brew.ratio, brew.rating, brew.rating2 ?? null,
 			brew.aroma ?? null, brew.flavor ?? null, brew.body ?? null, brew.finish ?? null,
@@ -385,6 +416,23 @@ export async function insertMachine(machine: Machine, meta: SyncMeta = localWrit
 	);
 }
 
+export async function insertWaterProfile(profile: WaterProfile, meta: SyncMeta = localWriteMeta()): Promise<void> {
+	await exec(
+		`INSERT OR REPLACE INTO water_profiles
+			(id, name, base, gh, kh, tds, notes, retired, additions, updated_at, deleted, dirty)
+		VALUES (?,?,?,?,?,?,?,
+			COALESCE(?, (SELECT retired FROM water_profiles WHERE id = ?), 0),
+			COALESCE(?, (SELECT additions FROM water_profiles WHERE id = ?), '[]'),
+			?,?,?)`,
+		[
+			profile.id, profile.name, profile.base ?? null, profile.gh ?? null, profile.kh ?? null,
+			profile.tds ?? null, profile.notes ?? null, retiredFlag(profile.retired), profile.id,
+			jsonOrNull(profile.additions), profile.id,
+			meta.updatedAt, meta.deleted, meta.dirty
+		]
+	);
+}
+
 export async function insertMethod(method: MethodDef, meta: SyncMeta = localWriteMeta()): Promise<void> {
 	await exec(
 		`INSERT OR REPLACE INTO methods
@@ -428,6 +476,10 @@ export async function softDeleteGrinder(id: string): Promise<void> {
 
 export async function softDeleteMachine(id: string): Promise<void> {
 	await exec('UPDATE machines SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
+}
+
+export async function softDeleteWaterProfile(id: string): Promise<void> {
+	await exec('UPDATE water_profiles SET deleted = 1, dirty = 1, updated_at = ? WHERE id = ?', [Date.now(), id]);
 }
 
 export async function softDeleteMethod(id: string): Promise<void> {

@@ -11,6 +11,7 @@
   import { formatDecimal, formatRatio } from "$lib/data/numbers";
   import { espressoDrinkForBrew, espressoDrinkLabel, isMilkEspressoDrink } from "$lib/data/espresso-drinks";
   import { formatSetting } from "$lib/data/machine-options";
+  import { formatDose, stageLabel } from "$lib/data/water";
 
   let {
     brew,
@@ -32,6 +33,9 @@
     Boolean(brew.descriptors?.length || brew.aroma || brew.flavor || brew.body || brew.finish),
   );
   const sourceRecipe = $derived(brew.recipeId ? journal.recipes.find((recipe) => recipe.id === brew.recipeId) : undefined);
+  const waterProfile = $derived(
+    brew.waterProfile ? journal.waterProfiles.find((profile) => profile.id === brew.waterProfile) : undefined,
+  );
   const espressoDrink = $derived(espressoDrinkForBrew(brew));
   const milkDrink = $derived(isMilkEspressoDrink(espressoDrink));
 
@@ -138,6 +142,16 @@
       {#if machine}<span>{machine.name}</span>{/if}
       {#each brew.machineSettings ?? [] as setting (setting.optionId)}
         <span class="machine-setting">{setting.label} <strong>{formatSetting(setting)}</strong></span>
+      {/each}
+    </div>
+  {/if}
+
+  {#if waterProfile || brew.mineralDoses?.length}
+    <div class="machine-strip">
+      <Icon name="droplet" size={14} />
+      {#if waterProfile}<a href="/water/{waterProfile.id}">{waterProfile.name}</a>{/if}
+      {#each brew.mineralDoses ?? [] as dose (dose.additionId)}
+        <span class="machine-setting">{dose.product} <strong>{formatDose(dose)}</strong> {stageLabel(dose.stage)}</span>
       {/each}
     </div>
   {/if}
@@ -319,7 +333,7 @@
   .machine-setting {
     color: var(--ink-3);
   }
-  span + .machine-setting::before {
+  :is(span, a) + .machine-setting::before {
     content: "·";
     margin-right: 8px;
   }

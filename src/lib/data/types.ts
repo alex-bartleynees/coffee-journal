@@ -76,6 +76,52 @@ export interface Machine {
 	brewOptions?: MachineBrewOption[];
 }
 
+/** When a mineral addition goes in: remineralising the brew water, or dosed into the finished cup. */
+export type MineralStage = 'brew-water' | 'in-cup';
+
+/**
+ * A mineral product a water profile adds (e.g. Apax drops in the cup, a Third
+ * Wave sachet in distilled water). Defined on the profile, offered on the Brew step.
+ */
+export interface MineralAddition {
+	id: string;
+	product: string;
+	/** Free text — "drops", "ml", "g", "sachet"… */
+	unit?: string;
+	stage: MineralStage;
+	min: number;
+	max: number;
+	step: number;
+	default: number;
+}
+
+/**
+ * A mineral addition's amount on a brew. Product/unit/stage are copied in so the
+ * brew stays a readable snapshot even if the profile is later edited or removed.
+ */
+export interface MineralDose {
+	additionId: string;
+	product: string;
+	unit?: string;
+	stage: MineralStage;
+	amount: number;
+}
+
+export interface WaterProfile {
+	id: string;
+	name: string;
+	/** The water the minerals go into — "Brita filtered tap", "Distilled", a bottled brand. */
+	base?: string;
+	/** Optional measurements in ppm, for people who test their water. */
+	gh?: number;
+	kh?: number;
+	tds?: number;
+	notes?: string;
+	/** Retired profiles stay on historical brews, but are unavailable for new brews. */
+	retired?: boolean;
+	additions: MineralAddition[];
+}
+
 export interface Bean {
 	id: string;
 	name: string;
@@ -127,6 +173,10 @@ export interface Brew {
 	machine?: string;
 	/** Values for the machine's brew options at the time of the brew. */
 	machineSettings?: MachineSetting[];
+	/** Water profile used, if any — references a WaterProfile.id. */
+	waterProfile?: string;
+	/** Amounts of the water profile's mineral additions at the time of the brew. */
+	mineralDoses?: MineralDose[];
 	grindSetting: number;
 	doseIn: number;
 	yieldOut: number;

@@ -47,9 +47,9 @@
 		{ href: '/stats', match: '/stats', icon: 'compare' as const, label: 'Stats' },
 		{ href: '/grinders', match: '/grinders', icon: 'coffee' as const, label: 'Grinders' }
 	];
-	// The mobile gear tab covers all three equipment routes — Grinders/Machines/Methods
+	// The mobile gear tab covers all the equipment routes — Grinders/Machines/Methods/Water
 	// switch via the in-page EquipSwitch, not separate bottom-nav icons.
-	const gearRoutes = ['/grinders', '/machines', '/methods'];
+	const gearRoutes = ['/grinders', '/machines', '/methods', '/water'];
 	const EQUIPMENT_STORAGE_KEY = 'bloom:last-equipment-view';
 	let gearHref = $state(DEFAULT_EQUIPMENT_ROOT);
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { calendarDate } from '$lib/data/date';
-import type { Bean, Brew, Grinder, Machine, MethodDef, Recipe } from '$lib/data/types';
+import type { Bean, Brew, Grinder, Machine, MethodDef, Recipe, WaterProfile } from '$lib/data/types';
 import { resetMemoryDb } from './memory-db';
 
 vi.mock('./index', () => import('./memory-db'));
@@ -28,6 +28,12 @@ const machine: Machine = {
 	brewOptions: [{ id: 'o1', label: 'Pre-infusion time', unit: 's', min: 0, max: 15, step: 1, default: 7 }]
 };
 
+const waterProfile: WaterProfile = {
+	id: 'w1', name: 'Filtered + Apax', base: 'Brita filtered tap', gh: 50, kh: 40, tds: 120,
+	notes: 'Shake first', retired: true,
+	additions: [{ id: 'a1', product: 'Apax Lab', unit: 'drops', stage: 'in-cup', min: 0, max: 10, step: 1, default: 2 }]
+};
+
 const method: MethodDef = { id: 'siphon', label: 'Siphon', icon: 'cup', notes: 'Low heat' };
 
 const recipe: Recipe = {
@@ -40,6 +46,8 @@ const brew: Brew = {
 	id: 'br1', beanId: 'b1', method: 'espresso', date: calendarDate('2026-10-27'), time: '12:11',
 	grinder: 'g1', machine: 'm1',
 	machineSettings: [{ optionId: 'o1', label: 'Pre-infusion time', unit: 's', value: 10 }],
+	waterProfile: 'w1',
+	mineralDoses: [{ additionId: 'a1', product: 'Apax Lab', unit: 'drops', stage: 'in-cup', amount: 3 }],
 	grindSetting: 7, doseIn: 18.2, yieldOut: 50, extractionTime: 34, temperature: 96, ratio: '1:2.7',
 	recipeNotes: 'Grind finer', recipeId: 'r1', rating: 8, rating2: 7.5, aroma: 'Floral',
 	flavor: 'Citrus', body: 'Light', finish: 'Clean', descriptors: ['Bright'], withMilk: true,
@@ -65,6 +73,11 @@ describe('local writes round-trip through the real schema', () => {
 		expect(await q.getAllMachines()).toEqual([machine]);
 	});
 
+	it('saves and reads back a water profile with mineral additions', async () => {
+		await q.insertWaterProfile(waterProfile);
+		expect(await q.getAllWaterProfiles()).toEqual([waterProfile]);
+	});
+
 	it('saves and reads back a method', async () => {
 		await q.insertMethod(method);
 		expect(await q.getAllMethods()).toEqual([method]);
@@ -86,6 +99,7 @@ describe('local writes round-trip through the real schema', () => {
 		await q.insertMachine(machine);
 		await q.insertMethod(method);
 		await q.insertRecipe(recipe);
+		await q.insertWaterProfile(waterProfile);
 		await q.insertBrew(brew);
 
 		await q.softDeleteBean(bean.id);
@@ -93,6 +107,7 @@ describe('local writes round-trip through the real schema', () => {
 		await q.softDeleteMachine(machine.id);
 		await q.softDeleteMethod(method.id);
 		await q.softDeleteRecipe(recipe.id);
+		await q.softDeleteWaterProfile(waterProfile.id);
 		await q.softDeleteBrew(brew.id);
 
 		expect(await q.getAllBeans()).toEqual([]);
@@ -100,6 +115,7 @@ describe('local writes round-trip through the real schema', () => {
 		expect(await q.getAllMachines()).toEqual([]);
 		expect(await q.getAllMethods()).toEqual([]);
 		expect(await q.getAllRecipes()).toEqual([]);
+		expect(await q.getAllWaterProfiles()).toEqual([]);
 		expect(await q.getAllBrews()).toEqual([]);
 	});
 });

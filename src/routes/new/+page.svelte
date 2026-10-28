@@ -7,7 +7,8 @@
 	import { brewFromDraft, brewSteps, createDraft, draftFromBrew, loadDraft, saveDraft, clearDraft } from '$lib/components/new-brew/DraftBrew';
 	import { newId } from '$lib/data/id';
 	import { todayIso } from '$lib/data/date';
-	import { brewSelection } from '$lib/data/brew-equipment';
+	import { brewEquipment, brewSelection } from '$lib/data/brew-equipment';
+	import { lastWaterChoice } from '$lib/data/water';
 	import BeanStep from '$lib/components/new-brew/BeanStep.svelte';
 	import BrewStep from '$lib/components/new-brew/BrewStep.svelte';
 	import TasteStep from '$lib/components/new-brew/TasteStep.svelte';
@@ -19,20 +20,33 @@
 	const draft = $state(createDraft(journal.beans[0]?.id ?? ''));
 	const selectedRecipe = $derived(draft.recipeId ? journal.recipes.find((recipe) => recipe.id === draft.recipeId) : undefined);
 	const selectedMachine = $derived(draft.machine ? journal.machines.find((machine) => machine.id === draft.machine) : undefined);
+	const selectedWater = $derived(
+		draft.waterProfile ? journal.waterProfiles.find((profile) => profile.id === draft.waterProfile) : undefined
+	);
 	const steps = $derived(brewSteps(draft.quickBrew));
 	let initializedEditId: string | null = null;
 
 	// Restore an in-progress draft (if any) only after mount, so server/client
 	// initial render agree; start autosaving once restored.
 	let persisting = false;
+	// A fresh brew starts with the last brew's water, applied once the journal has loaded.
+	let needsWaterDefault = $state(false);
 	onMount(() => {
 		if (editId) return;
 		const restored = loadDraft();
 		if (restored) {
 			Object.assign(draft, restored.draft);
 			tab = restored.tab;
+		} else {
+			needsWaterDefault = true;
 		}
 		persisting = true;
+	});
+
+	$effect(() => {
+		if (!needsWaterDefault || !journal.ready) return;
+		needsWaterDefault = false;
+		Object.assign(draft, lastWaterChoice(journal.brews, journal.waterProfiles));
 	});
 
 	$effect(() => {
@@ -51,6 +65,14 @@
 	$effect(() => {
 		if (!journal.ready) return;
 		draft.grinder = brewSelection(journal.grinders, draft.grinder, existingBrew?.grinder);
+	});
+
+	// Water is optional, so a retired/deleted profile on a restored draft falls back to none.
+	$effect(() => {
+		if (!journal.ready || !draft.waterProfile || draft.waterProfile === existingBrew?.waterProfile) return;
+		if (!brewEquipment(journal.waterProfiles).some((profile) => profile.id === draft.waterProfile)) {
+			draft.waterProfile = null;
+		}
 	});
 
 	$effect(() => {
@@ -80,10 +102,14 @@
 			id: existingBrew?.id ?? newId('br'),
 			date: existingBrew?.date ?? todayIso(),
 			time: existingBrew?.time ?? new Date().toTimeString().slice(0, 5)
-		}, selectedMachine);
+		}, selectedMachine, selectedWater);
 		// The machine was deleted since this brew — keep its recorded settings as-is.
 		if (existingBrew && !selectedMachine && draft.machine === (existingBrew.machine ?? null)) {
 			brew.machineSettings = existingBrew.machineSettings;
+		}
+		// Likewise for a since-deleted water profile and its recorded doses.
+		if (existingBrew && draft.waterProfile && !selectedWater && draft.waterProfile === existingBrew.waterProfile) {
+			brew.mineralDoses = existingBrew.mineralDoses;
 		}
 		if (existingBrew) journal.updateBrew(brew);
 		else {
@@ -153,7 +179,10 @@
 				grinders={journal.grinders}
 				recipe={selectedRecipe}
 				machine={selectedMachine}
+				waterProfiles={journal.waterProfiles}
+				waterProfile={selectedWater}
 				includeGrinderId={existingBrew?.grinder}
+				includeWaterId={existingBrew?.waterProfile}
 			/>
 		{:else if tab === 2}
 			<TasteStep {draft} />

@@ -6,13 +6,16 @@ export function stepDecimals(step: number): number {
 	return Math.min(fraction.length, 3);
 }
 
-export function clampOptionValue(option: MachineBrewOption, value: number): number {
+/** The numeric shape shared by machine brew options and water mineral additions. */
+export type NumericOption = Pick<MachineBrewOption, 'id' | 'min' | 'max' | 'step' | 'default'>;
+
+export function clampOptionValue(option: Omit<NumericOption, 'id' | 'default'>, value: number): number {
 	const clamped = Math.min(option.max, Math.max(option.min, value));
 	return +clamped.toFixed(stepDecimals(option.step));
 }
 
 /** The draft's value for an option, falling back to the option's default. */
-export function optionValue(option: MachineBrewOption, values: Record<string, number>): number {
+export function optionValue(option: NumericOption, values: Record<string, number>): number {
 	const value = values[option.id];
 	return clampOptionValue(option, typeof value === 'number' && Number.isFinite(value) ? value : option.default);
 }
@@ -88,9 +91,13 @@ export const BREW_OPTION_PRESETS: readonly Omit<MachineBrewOption, 'id'>[] = [
 
 /** Whether an option being edited on the machine form can be saved. */
 export function isValidBrewOption(option: MachineBrewOption): boolean {
+	return option.label.trim().length > 0 && hasValidRange(option);
+}
+
+/** Whether an option's numbers (as typed on a form) describe a usable stepper. */
+export function hasValidRange(option: Omit<NumericOption, 'id'>): boolean {
 	const numbers = [option.min, option.max, option.step, option.default];
 	return (
-		option.label.trim().length > 0 &&
 		numbers.every((n) => typeof n === 'number' && Number.isFinite(n)) &&
 		option.step > 0 && option.min <= option.max
 	);

@@ -13,6 +13,7 @@
 		{ href: '/grinders', icon: 'coffee', label: 'Grinders', count: journal.grinders.length },
 		{ href: '/machines', icon: 'machine', label: 'Machines', count: journal.machines.length },
 		{ href: '/methods', icon: 'cup', label: 'Methods', count: journal.methods.length },
+		{ href: '/water', icon: 'droplet', label: 'Water', count: journal.waterProfiles.length },
 		{ href: '/stats', icon: 'compare', label: 'Insights' }
 	]);
 </script>

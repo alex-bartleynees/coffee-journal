@@ -1,5 +1,5 @@
 import { SAMPLE_BEANS, SAMPLE_BREWS, SAMPLE_GRINDERS, SAMPLE_MACHINES, SAMPLE_METHODS } from '$lib/data/sample';
-import type { Bean, Brew, Grinder, Machine, MethodDef, Recipe } from '$lib/data/types';
+import type { Bean, Brew, Grinder, Machine, MethodDef, Recipe, WaterProfile } from '$lib/data/types';
 import { openDb, exec, query, isPersistent } from '$lib/db/index';
 import {
 	getAllBeans,
@@ -8,6 +8,7 @@ import {
 	getAllMachines,
 	getAllMethods,
 	getAllRecipes,
+	getAllWaterProfiles,
 	upsertBeanPhoto,
 	deleteBeanPhoto,
 	insertBean,
@@ -16,12 +17,14 @@ import {
 	insertMachine,
 	insertMethod,
 	insertRecipe,
+	insertWaterProfile,
 	softDeleteBean,
 	softDeleteBrew,
 	softDeleteGrinder,
 	softDeleteMachine,
 	softDeleteMethod,
-	softDeleteRecipe
+	softDeleteRecipe,
+	softDeleteWaterProfile
 } from '$lib/db/queries';
 import { sync } from '$lib/sync/engine.svelte';
 import { ensureDefaultMethods } from '$lib/db/default-methods';
@@ -33,6 +36,7 @@ let grinders = $state<Grinder[]>([]);
 let machines = $state<Machine[]>([]);
 let methods = $state<MethodDef[]>([]);
 let recipes = $state<Recipe[]>([]);
+let waterProfiles = $state<WaterProfile[]>([]);
 let ready = $state(false);
 let persistent = $state(false);
 let error = $state<string | null>(null);
@@ -123,6 +127,7 @@ async function init(): Promise<void> {
 		machines = await getAllMachines();
 		methods = await getAllMethods();
 		recipes = await getAllRecipes();
+		waterProfiles = await getAllWaterProfiles();
 	} catch (e) {
 		error = e instanceof Error ? e.message : String(e);
 		console.error('Database initialization failed', e);
@@ -140,6 +145,7 @@ async function reload(): Promise<void> {
 	machines = await getAllMachines();
 	methods = await getAllMethods();
 	recipes = await getAllRecipes();
+	waterProfiles = await getAllWaterProfiles();
 }
 
 function addBrew(brew: Brew): void {
@@ -300,6 +306,35 @@ function deleteRecipe(id: string): void {
 	sync.schedule();
 }
 
+function addWaterProfile(profile: WaterProfile): void {
+	waterProfiles = [...waterProfiles, profile].sort((a, b) => a.name.localeCompare(b.name));
+	persist('water profile', () => insertWaterProfile(profile));
+	sync.schedule();
+}
+
+function updateWaterProfile(updated: WaterProfile): void {
+	if (!waterProfiles.some((profile) => profile.id === updated.id)) {
+		console.error(`Cannot update missing water profile ${updated.id}`);
+		return;
+	}
+	waterProfiles = waterProfiles
+		.map((profile) => (profile.id === updated.id ? updated : profile))
+		.sort((a, b) => a.name.localeCompare(b.name));
+	persist('water profile', () => insertWaterProfile(updated));
+	sync.schedule();
+}
+
+function toggleWaterProfileRetired(id: string): void {
+	const profile = waterProfiles.find((candidate) => candidate.id === id);
+	if (profile) updateWaterProfile({ ...profile, retired: !profile.retired });
+}
+
+function deleteWaterProfile(id: string): void {
+	waterProfiles = waterProfiles.filter((profile) => profile.id !== id);
+	persist('water profile', () => softDeleteWaterProfile(id));
+	sync.schedule();
+}
+
 function deleteBrew(id: string): void {
 	const brew = brews.find((b) => b.id === id);
 	brews = brews.filter((b) => b.id !== id);
@@ -347,6 +382,7 @@ export const journal = {
 	get machines() { return machines; },
 	get methods() { return methods; },
 	get recipes() { return recipes; },
+	get waterProfiles() { return waterProfiles; },
 	get ready() { return ready; },
 	get persistent() { return persistent; },
 	get error() { return error; },
@@ -361,6 +397,7 @@ export const journal = {
 	addMachine,
 	addMethod,
 	addRecipe,
+	addWaterProfile,
 	updateBrew,
 	updateBean,
 	finishBean,
@@ -370,6 +407,8 @@ export const journal = {
 	toggleMachineRetired,
 	updateMethod,
 	updateRecipe,
+	updateWaterProfile,
+	toggleWaterProfileRetired,
 	deleteBrew,
 	deleteBean,
 	saveBeanPhoto,
@@ -377,5 +416,6 @@ export const journal = {
 	deleteGrinder,
 	deleteMachine,
 	deleteMethod,
-	deleteRecipe
+	deleteRecipe,
+	deleteWaterProfile
 };

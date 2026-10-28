@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Brew, Machine } from '$lib/data/types';
+import type { Brew, Machine, WaterProfile } from '$lib/data/types';
 import { calendarDate } from '$lib/data/date';
 import { brewFromDraft, brewSteps, createDraft, draftFromBrew } from './DraftBrew';
 
@@ -135,5 +135,40 @@ describe('machine settings draft state', () => {
 		} as Brew);
 
 		expect(draft.machineSettings).toEqual({ 'pi-time': 4 });
+	});
+});
+
+describe('water draft state', () => {
+	const water: WaterProfile = {
+		id: 'w1', name: 'Filtered + Apax',
+		additions: [{ id: 'a1', product: 'Apax Lab', unit: 'drops', stage: 'in-cup', min: 0, max: 10, step: 1, default: 2 }]
+	};
+
+	it('snapshots the selected water profile doses', () => {
+		const draft = createDraft('bean-1');
+		Object.assign(draft, { waterProfile: 'w1', mineralDoses: { a1: 3 } });
+
+		const brew = brewFromDraft(draft, { id: 'brew-1', date: calendarDate('2026-10-28'), time: '08:00' }, undefined, water);
+
+		expect(brew.waterProfile).toBe('w1');
+		expect(brew.mineralDoses).toEqual([{ additionId: 'a1', product: 'Apax Lab', unit: 'drops', stage: 'in-cup', amount: 3 }]);
+	});
+
+	it('records an empty dose list when no water is chosen, so sync can tell it was cleared', () => {
+		const brew = brewFromDraft(createDraft('bean-1'), { id: 'brew-1', date: calendarDate('2026-10-28'), time: '08:00' });
+
+		expect(brew.waterProfile).toBeUndefined();
+		expect(brew.mineralDoses).toEqual([]);
+	});
+
+	it('restores recorded doses when editing a brew', () => {
+		const draft = draftFromBrew({
+			method: 'espresso',
+			waterProfile: 'w1',
+			mineralDoses: [{ additionId: 'a1', product: 'Apax Lab', stage: 'in-cup', amount: 3 }]
+		} as Brew);
+
+		expect(draft.waterProfile).toBe('w1');
+		expect(draft.mineralDoses).toEqual({ a1: 3 });
 	});
 });

@@ -6,22 +6,25 @@ import {
 	machineFromRow,
 	methodFromRow,
 	recipeFromRow,
+	waterProfileFromRow,
 	insertBean,
 	insertBrew,
 	insertGrinder,
 	insertMachine,
 	insertMethod,
 	insertRecipe,
+	insertWaterProfile,
 	type BeanRow,
 	type BrewRow,
 	type GrinderRow,
 	type MachineRow,
 	type MethodRow,
 	type RecipeRow,
+	type WaterProfileRow,
 	type PresetRow
 } from './queries';
 import { SYNCABLE_TABLES } from './schema';
-import type { Bean, Brew, Grinder, Machine, MethodDef, Recipe } from '$lib/data/types';
+import type { Bean, Brew, Grinder, Machine, MethodDef, Recipe, WaterProfile } from '$lib/data/types';
 import type { Entity, SyncRecord } from '$lib/sync/protocol';
 
 /**
@@ -31,7 +34,8 @@ import type { Entity, SyncRecord } from '$lib/sync/protocol';
  */
 
 const TABLE: Record<Entity, string> = {
-	bean: 'beans', grinder: 'grinders', brew: 'brews', machine: 'machines', method: 'methods', recipe: 'recipes'
+	bean: 'beans', grinder: 'grinders', brew: 'brews', machine: 'machines', method: 'methods', recipe: 'recipes',
+	water: 'water_profiles'
 };
 
 type MetaRow = { value: string };
@@ -91,6 +95,14 @@ export async function getDirtyRecords(): Promise<SyncRecord[]> {
 		});
 	}
 
+	const waters = await query<WaterProfileRow & SyncFlagsRow>('SELECT * FROM water_profiles WHERE dirty = 1');
+	for (const r of waters) {
+		records.push({
+			entity: 'water', id: r.id, updatedAt: r.updated_at,
+			deleted: !!r.deleted, payload: waterProfileFromRow(r)
+		});
+	}
+
 	return records;
 }
 
@@ -137,6 +149,7 @@ export async function applyRemoteRecord(rec: SyncRecord): Promise<boolean> {
 	else if (rec.entity === 'machine') await insertMachine(rec.payload as Machine, meta);
 	else if (rec.entity === 'method') await insertMethod(rec.payload as MethodDef, meta);
 	else if (rec.entity === 'recipe') await insertRecipe(rec.payload as Recipe, meta);
+	else if (rec.entity === 'water') await insertWaterProfile(rec.payload as WaterProfile, meta);
 	else await insertBrew(rec.payload as Brew, meta);
 	return true;
 }

@@ -5,6 +5,7 @@ describe('equipment navigation', () => {
 	it('maps equipment detail and creation routes to their tab root', () => {
 		expect(equipmentRoot('/machines/m1')).toBe('/machines');
 		expect(equipmentRoot('/methods/new')).toBe('/methods');
+		expect(equipmentRoot('/water/w1')).toBe('/water');
 	});
 
 	it('rejects unrelated or malformed stored destinations', () => {

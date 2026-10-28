@@ -4,7 +4,8 @@
 	const items = [
 		{ href: '/grinders', label: 'Grinders' },
 		{ href: '/machines', label: 'Machines' },
-		{ href: '/methods', label: 'Methods' }
+		{ href: '/methods', label: 'Methods' },
+		{ href: '/water', label: 'Water' }
 	];
 </script>
 
@@ -40,7 +41,7 @@
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 	}
 
-	/* Desktop already has three separate sidebar entries for these — the
+	/* Desktop already has separate sidebar entries for these — the
 	   in-page switch would just be a redundant second way to do the same nav. */
 	@media (min-width: 860px) {
 		.equip-switch {

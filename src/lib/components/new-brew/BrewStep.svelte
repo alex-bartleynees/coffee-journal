@@ -3,24 +3,29 @@
 	import GuidedBrew from './GuidedBrew.svelte';
 	import Icon from '$lib/icons/Icon.svelte';
 	import Stepper from './Stepper.svelte';
-	import type { Grinder, Machine, Recipe } from '$lib/data/types';
+	import type { Grinder, Machine, Recipe, WaterProfile } from '$lib/data/types';
 	import type { DraftBrew } from './DraftBrew';
 	import { brewEquipment } from '$lib/data/brew-equipment';
 	import { optionValue, stepDecimals } from '$lib/data/machine-options';
+	import { stageLabel } from '$lib/data/water';
 
 	interface Props {
 		draft: DraftBrew;
 		grinders: Grinder[];
 		recipe?: Recipe;
 		machine?: Machine;
+		waterProfiles: WaterProfile[];
+		waterProfile?: WaterProfile;
 		includeGrinderId?: string;
+		includeWaterId?: string;
 	}
 
-	let { draft, grinders, recipe, machine, includeGrinderId }: Props = $props();
+	let { draft, grinders, recipe, machine, waterProfiles, waterProfile, includeGrinderId, includeWaterId }: Props = $props();
 	const machineOptions = $derived(machine?.brewOptions ?? []);
 	let guiding = $state(false);
 
 	const availableGrinders = $derived(brewEquipment(grinders, includeGrinderId));
+	const availableWater = $derived(brewEquipment(waterProfiles, includeWaterId));
 	const ratio = $derived(draft.yieldOut && draft.doseIn ? `1:${(draft.yieldOut / draft.doseIn).toFixed(1)}` : '—');
 	const grinder = $derived(availableGrinders.find((g) => g.id === draft.grinder) ?? availableGrinders[0]);
 </script>
@@ -108,6 +113,34 @@
 				onChange={(v) => (draft.grindSetting = v)}
 			/>
 		{/if}
+
+		{#if availableWater.length > 0}
+			<div class="section-label water-label">Water</div>
+			<div class="chip-group water-chips">
+				<button class="chip" class:active={!draft.waterProfile} onclick={() => (draft.waterProfile = null)}>None</button>
+				{#each availableWater as w (w.id)}
+					<button class="chip" class:active={draft.waterProfile === w.id} onclick={() => (draft.waterProfile = w.id)}>
+						{w.name}
+					</button>
+				{/each}
+			</div>
+			{#if waterProfile?.additions.length}
+				<div class="machine-options">
+					{#each waterProfile.additions as addition (addition.id)}
+						<Stepper
+							label={`${addition.product} · ${stageLabel(addition.stage)}`}
+							value={optionValue(addition, draft.mineralDoses)}
+							unit={addition.unit}
+							step={addition.step}
+							decimals={stepDecimals(addition.step)}
+							min={addition.min}
+							max={addition.max}
+							onChange={(v) => (draft.mineralDoses[addition.id] = v)}
+						/>
+					{/each}
+				</div>
+			{/if}
+		{/if}
 	</div>
 </div>
 
@@ -157,6 +190,12 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 12px;
+		margin-bottom: 12px;
+	}
+	.water-label {
+		margin-top: 16px;
+	}
+	.water-chips {
 		margin-bottom: 12px;
 	}
 	.grinder-chips {

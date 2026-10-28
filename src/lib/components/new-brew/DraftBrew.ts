@@ -1,5 +1,6 @@
-import type { Brew, EspressoDrink, Machine, Method, MilkDrink } from '$lib/data/types';
+import type { Brew, EspressoDrink, Machine, Method, MilkDrink, WaterProfile } from '$lib/data/types';
 import { machineSettingsSnapshot, settingValues } from '$lib/data/machine-options';
+import { doseValues, mineralDosesSnapshot } from '$lib/data/water';
 import { espressoDrinkForBrew } from '$lib/data/espresso-drinks';
 import type { CalendarDate } from '$lib/data/date';
 import { roundDecimal } from '$lib/data/numbers';
@@ -15,6 +16,9 @@ export interface DraftBrew {
 	machine: string | null;
 	/** Machine brew-option values keyed by option id; missing ids use the option default. */
 	machineSettings: Record<string, number>;
+	waterProfile: string | null;
+	/** Mineral amounts keyed by addition id; missing ids use the addition default. */
+	mineralDoses: Record<string, number>;
 	grinder: string;
 	grindSetting: number;
 	doseIn: number;
@@ -45,6 +49,8 @@ export function createDraft(beanId: string): DraftBrew {
 		espressoDrink: 'Espresso',
 		machine: null,
 		machineSettings: {},
+		waterProfile: null,
+		mineralDoses: {},
 		grinder: 'g1',
 		grindSetting: 14,
 		doseIn: 18,
@@ -76,6 +82,8 @@ export function draftFromBrew(brew: Brew): DraftBrew {
 		espressoDrink: espressoDrinkForBrew(brew),
 		machine: brew.machine ?? null,
 		machineSettings: settingValues(brew.machineSettings),
+		waterProfile: brew.waterProfile ?? null,
+		mineralDoses: doseValues(brew.mineralDoses),
 		grinder: brew.grinder,
 		grindSetting: brew.grindSetting,
 		doseIn: brew.doseIn,
@@ -110,7 +118,8 @@ export function brewSteps(quickBrew: boolean) {
 export function brewFromDraft(
 	draft: DraftBrew,
 	identity: { id: string; date: CalendarDate; time: string },
-	machine?: Machine
+	machine?: Machine,
+	waterProfile?: WaterProfile
 ): Brew {
 	const withMilk = draft.method === 'espresso' && draft.withMilk;
 	const shared = {
@@ -125,6 +134,8 @@ export function brewFromDraft(
 		recipeId: draft.recipeId ?? undefined,
 		machine: draft.machine ?? undefined,
 		machineSettings: machineSettingsSnapshot(machine, draft.machineSettings),
+		waterProfile: draft.waterProfile ?? undefined,
+		mineralDoses: mineralDosesSnapshot(waterProfile, draft.mineralDoses),
 		withMilk,
 		milkDrink: withMilk ? draft.milkDrink : null,
 		espressoDrink: draft.method === 'espresso' ? draft.espressoDrink : null,
