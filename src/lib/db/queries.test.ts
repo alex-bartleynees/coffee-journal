@@ -119,3 +119,23 @@ describe('local writes round-trip through the real schema', () => {
 		expect(await q.getAllBrews()).toEqual([]);
 	});
 });
+
+describe('upcoming beans', () => {
+ beforeEach(resetMemoryDb);
+
+ it('persists an unopened bag, syncs it, and records opening it', async () => {
+  const upcoming = { ...bean, finished: undefined, upcoming: true };
+  await q.insertBean(upcoming);
+  expect(await q.getAllBeans()).toEqual([upcoming]);
+  const { getDirtyRecords, applyRemoteRecord } = await import('./sync-queries');
+  const [record] = await getDirtyRecords();
+  expect(record.payload).toMatchObject({ upcoming: true });
+  resetMemoryDb();
+  await applyRemoteRecord(record);
+  expect(await q.getAllBeans()).toEqual([upcoming]);
+  await q.insertBean({ ...upcoming, upcoming: undefined, dateOpened: calendarDate('2026-10-31') });
+  expect((await q.getAllBeans())[0]).toMatchObject({
+   upcoming: undefined, dateOpened: '2026-10-31'
+  });
+ });
+});

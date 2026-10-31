@@ -23,7 +23,7 @@
 			{/snippet}
 		</BackHeader>
 
-		<BeanDetail {bean} {beanBrews} onFinish={finishBag} />
+		<BeanDetail {bean} {beanBrews} onFinish={finishBag} onOpen={() => journal.openBean(bean!.id)} />
 	</div>
 {:else}
 	<div class="screen">

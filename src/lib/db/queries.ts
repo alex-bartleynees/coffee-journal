@@ -21,7 +21,7 @@ export type BeanRow = {
 	id: string; name: string; roaster: string; origin: string; process: string;
 	varietal: string; roast: string; altitude: string; tasting: string;
 	date_opened: string; roast_date: string; price_per_kg: number;
-	bag_weight: number; finished: number; brews?: number;
+	bag_weight: number; finished: number; upcoming?: number; brews?: number;
 };
 
 export type BrewRow = {
@@ -81,7 +81,7 @@ export function beanFromRow(r: BeanRow): Bean {
 		altitude: r.altitude, tasting: JSON.parse(r.tasting) as string[],
 		dateOpened: calendarDate(r.date_opened), roastDate: calendarDate(r.roast_date),
 		pricePerKg: r.price_per_kg, bagWeight: r.bag_weight,
-		brews: r.brews ?? 0, finished: r.finished ? true : undefined
+		brews: r.brews ?? 0, finished: r.finished ? true : undefined, upcoming: r.upcoming ? true : undefined
 	};
 }
 
@@ -346,14 +346,14 @@ export async function insertBean(bean: Bean, meta: SyncMeta = localWriteMeta()):
 	await exec(
 		`INSERT OR REPLACE INTO beans
 			(id, name, roaster, origin, process, varietal, roast, altitude, tasting,
-			 date_opened, roast_date, price_per_kg, bag_weight, finished,
+			 date_opened, roast_date, price_per_kg, bag_weight, finished, upcoming,
 			 updated_at, deleted, dirty)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		[
 			bean.id, bean.name, bean.roaster, bean.origin, bean.process, bean.varietal,
 			bean.roast, bean.altitude, JSON.stringify(bean.tasting),
 			bean.dateOpened, bean.roastDate, bean.pricePerKg, bean.bagWeight,
-			bean.finished ? 1 : 0,
+			bean.finished ? 1 : 0, bean.upcoming ? 1 : 0,
 			meta.updatedAt, meta.deleted, meta.dirty
 		]
 	);

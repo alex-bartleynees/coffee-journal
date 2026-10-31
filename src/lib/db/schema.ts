@@ -12,7 +12,8 @@
  * `brews.water_profile` / `brews.mineral_doses` snapshot — see
  * [[Sync-Protocol]].
  */
-export const SCHEMA_VERSION = 13;
+// v14 adds the upcoming bean flag.
+export const SCHEMA_VERSION = 14;
 
 /**
  * Sync-metadata columns present on every syncable table (beans/grinders/brews):
@@ -71,6 +72,7 @@ export const SCHEMA_SQL = `
 		price_per_kg REAL NOT NULL DEFAULT 0,
 		bag_weight   REAL NOT NULL DEFAULT 0,
 		finished     INTEGER NOT NULL DEFAULT 0,
+		upcoming     INTEGER NOT NULL DEFAULT 0,
 		updated_at   INTEGER NOT NULL DEFAULT 0,
 		deleted      INTEGER NOT NULL DEFAULT 0,
 		dirty        INTEGER NOT NULL DEFAULT 0

@@ -28,6 +28,7 @@ import {
 } from '$lib/db/queries';
 import { sync } from '$lib/sync/engine.svelte';
 import { ensureDefaultMethods } from '$lib/db/default-methods';
+import { todayIso, type CalendarDate } from '$lib/data/date';
 import { beanInventory } from '$lib/data/bean-inventory';
 
 let beans = $state<Bean[]>([]);
@@ -76,7 +77,7 @@ async function retryFailedWrites(): Promise<void> {
 
 function finishConsumedBeans(): void {
 	beans = beans.map((bean) => {
-		if (bean.finished) return bean;
+		if (bean.finished || bean.upcoming) return bean;
 		const doses = brews.filter((brew) => brew.beanId === bean.id).map((brew) => brew.doseIn);
 		if (!beanInventory(bean.bagWeight, doses).finished) return bean;
 		const finishedBean = { ...bean, finished: true };
@@ -149,6 +150,7 @@ async function reload(): Promise<void> {
 }
 
 function addBrew(brew: Brew): void {
+	openBean(brew.beanId, brew.date);
 	brews = [brew, ...brews];
 	const idx = beans.findIndex((b) => b.id === brew.beanId);
 	if (idx >= 0) {
@@ -178,6 +180,7 @@ function updateBrew(updated: Brew): void {
 		return;
 	}
 
+	openBean(updated.beanId, updated.date);
 	brews = brews
 		.map((brew) => (brew.id === updated.id ? updated : brew))
 		.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
@@ -206,6 +209,12 @@ function updateBean(updated: Bean): void {
 		.sort((a, b) => b.dateOpened.localeCompare(a.dateOpened));
 	persist('bean', () => insertBean({ ...updated, brews: existing.brews }));
 	sync.schedule();
+}
+
+function openBean(id: string, date: CalendarDate = todayIso()): void {
+	const bean = beans.find((candidate) => candidate.id === id);
+	if (!bean?.upcoming || bean.finished) return;
+	updateBean({ ...bean, upcoming: undefined, dateOpened: date });
 }
 
 function finishBean(id: string): void {
@@ -393,6 +402,7 @@ export const journal = {
 	reload,
 	addBrew,
 	addBean,
+	openBean,
 	addGrinder,
 	addMachine,
 	addMethod,

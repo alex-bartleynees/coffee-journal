@@ -123,6 +123,9 @@ function migrate(database: Db): void {
       }
     }
   }
+  if (!columnNames(database, "beans").has("upcoming")) {
+    database.exec({ sql: "ALTER TABLE beans ADD COLUMN upcoming INTEGER NOT NULL DEFAULT 0" });
+  }
   const brewColumns = columnNames(database, "brews");
   for (const [col, def] of BREW_MIGRATION_COLUMNS) {
     if (!brewColumns.has(col)) {

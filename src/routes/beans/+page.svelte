@@ -9,7 +9,7 @@
 	import { journal } from '$lib/stores/journal.svelte';
 	import { search } from '$lib/stores/search.svelte';
 	import { todayIso, daysBetween } from '$lib/data/date';
-	import { storedBeanFilter, type BeanFilter } from '$lib/data/bean-filter';
+	import { beanStatus, storedBeanFilter, type BeanFilter } from '$lib/data/bean-filter';
 	import { averageRating } from '$lib/data/ratings';
 	import type { CalendarDate } from '$lib/data/date';
 
@@ -30,12 +30,13 @@
 
 	const counts = $derived({
 		all: beans.length,
-		active: beans.filter((b) => !b.finished).length,
+		active: beans.filter((b) => beanStatus(b) === 'active').length,
+		upcoming: beans.filter((b) => beanStatus(b) === 'upcoming').length,
 		finished: beans.filter((b) => b.finished).length
 	});
 
 	const list = $derived(
-		filter === 'all' ? beans : filter === 'active' ? beans.filter((b) => !b.finished) : beans.filter((b) => b.finished)
+		filter === 'all' ? beans : beans.filter((b) => beanStatus(b) === filter)
 	);
 
 	function daysSince(d: CalendarDate) {
@@ -77,7 +78,7 @@
 		</TopBar>
 
 		<div class="filter-row">
-			{#each ['all', 'active', 'finished'] as const as f (f)}
+			{#each ['all', 'active', 'upcoming', 'finished'] as const as f (f)}
 				<button class="chip" class:active={filter === f} onclick={() => selectFilter(f)}>
 					{f}
 					<span class="filter-count">{counts[f]}</span>
@@ -115,7 +116,7 @@
 								<span class="avg">★ {avg.toFixed(1)}</span>
 							{/if}
 							<span class="dim">·</span>
-							<span>{daysSince(bean.dateOpened)}d</span>
+							{#if beanStatus(bean) === 'upcoming'}<span class="tasting-chip">Upcoming</span>{:else}<span>{daysSince(bean.dateOpened)}d</span>{/if}
 						</div>
 					</div>
 				</a>
@@ -128,7 +129,7 @@
 			<div class="desktop-detail-actions">
 				<DetailActionMenu editHref={`/beans/new?edit=${selectedBean.id}`} label="Bean actions" />
 			</div>
-			<BeanDetail bean={selectedBean} beanBrews={selectedBeanBrews} onFinish={finishSelectedBag} />
+			<BeanDetail bean={selectedBean} beanBrews={selectedBeanBrews} onFinish={finishSelectedBag} onOpen={() => journal.openBean(selectedBean!.id)} />
 		</div>
 	{/if}
 </div>

@@ -138,6 +138,8 @@ export interface Bean {
 	bagWeight: number;
 	brews: number;
 	finished?: boolean;
+	/** Unopened bag; dateOpened is set when opened. */
+	upcoming?: boolean;
 	/** Device-local bean-bag photo. Deliberately excluded from the row sync payload. */
 	photoUrl?: string;
 }

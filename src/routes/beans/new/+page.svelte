@@ -36,6 +36,7 @@
 	let customTastingInput = $state<Record<string, string>>(
 		Object.fromEntries(Object.keys(TASTE_DESCRIPTORS).map((category) => [category, '']))
 	);
+	let upcoming = $state(false);
 	let dateOpened = $state<string>(today);
 	let roastDate = $state<string>(today);
 	let pricePerKg = $state(60);
@@ -84,7 +85,8 @@
 			const known = new Set(Object.values(TASTE_DESCRIPTORS).flat());
 			customTasting[firstCategory] = existingBean.tasting.filter((item) => !known.has(item));
 		}
-		dateOpened = existingBean.dateOpened;
+		upcoming = existingBean.upcoming ?? false;
+		dateOpened = existingBean.upcoming ? today : existingBean.dateOpened;
 		roastDate = existingBean.roastDate;
 		pricePerKg = existingBean.pricePerKg;
 		bagWeight = existingBean.bagWeight;
@@ -225,7 +227,8 @@
 			pricePerKg,
 			bagWeight,
 			brews: existingBean?.brews ?? 0,
-			finished: existingBean?.finished
+			finished: upcoming ? undefined : existingBean?.finished,
+			upcoming: upcoming || undefined
 		};
 		if (existingBean) journal.updateBean(bean);
 		else journal.addBean(bean);
@@ -356,10 +359,14 @@
 			</div>
 		</div>
 
+		<div class="field">
+			<label><input type="checkbox" bind:checked={upcoming} /> Upcoming — not opened yet</label>
+		</div>
+
 		<div class="field-row">
 			<div class="field">
 				<div class="field-label">Date opened</div>
-				<input class="field-input" type="date" bind:value={dateOpened} />
+				<input class="field-input" type="date" bind:value={dateOpened} disabled={upcoming} />
 			</div>
 			<div class="field">
 				<div class="field-label">Roast date</div>

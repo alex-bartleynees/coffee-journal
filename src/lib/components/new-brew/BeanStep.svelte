@@ -85,7 +85,7 @@
 					<span class="bean-bar" style="background:{roastColor[bean.roast]}"></span>
 					<span class="bean-option-info">
 						<span class="bean-option-name">{bean.name}</span>
-						<span class="bean-option-roaster">{bean.roaster}</span>
+						<span class="bean-option-roaster">{bean.roaster}{bean.upcoming ? ' · Upcoming — opens on first brew' : ''}</span>
 					</span>
 					{#if draft.beanId === bean.id}
 						<span class="bean-check"><Icon name="check" size={14} strokeWidth={2.4} /></span>

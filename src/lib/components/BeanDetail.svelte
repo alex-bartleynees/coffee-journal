@@ -10,8 +10,9 @@
 	let {
 		bean,
 		beanBrews,
-		onFinish
-	}: { bean: Bean; beanBrews: Brew[]; onFinish: () => void } = $props();
+		onFinish,
+		onOpen
+	}: { bean: Bean; beanBrews: Brew[]; onFinish: () => void; onOpen: () => void } = $props();
 
 	const avg = $derived(averageRating(beanBrews));
 	const best = $derived(bestRating(beanBrews));
@@ -34,6 +35,7 @@
 		{/if}
 		<div class="hero-sub">{bean.roaster}</div>
 		<h1 class="hero-title">{bean.name}</h1>
+		{#if bean.upcoming && !bean.finished}<div class="tasting-row"><span class="tasting-chip">Upcoming</span></div>{/if}
 		<div class="tasting-row">
 			{#each bean.tasting as t (t)}
 				<span class="tasting-chip">{t}</span>
@@ -47,7 +49,7 @@
 		<div class="kv"><div class="kv-label">Varietal</div><div class="kv-value">{bean.varietal}</div></div>
 		<div class="kv"><div class="kv-label">Altitude</div><div class="kv-value">{bean.altitude}</div></div>
 		<div class="kv"><div class="kv-label">Roast date</div><div class="kv-value">{daysAgo(bean.roastDate)}d ago</div></div>
-		<div class="kv"><div class="kv-label">Opened</div><div class="kv-value">{daysAgo(bean.dateOpened)}d ago</div></div>
+		<div class="kv"><div class="kv-label">Opened</div><div class="kv-value">{bean.upcoming ? 'Not opened yet' : daysAgo(bean.dateOpened) + 'd ago'}</div></div>
 	</div>
 
 	<div class="section-label">Bag</div>
@@ -75,6 +77,8 @@
 		</div>
 		{#if bean.finished}
 			<div class="bag-finished" role="status">Bag finished</div>
+		{:else if bean.upcoming}
+			<button class="finish-bag btn btn-ghost" type="button" onclick={onOpen}>Open bag</button>
 		{:else}
 			<button class="finish-bag btn btn-ghost" type="button" onclick={onFinish}>Finish bag</button>
 		{/if}
