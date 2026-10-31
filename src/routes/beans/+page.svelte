@@ -140,6 +140,10 @@
 		display: flex;
 		gap: 6px;
 		overflow-x: auto;
+		scrollbar-width: none;
+	}
+	.filter-row::-webkit-scrollbar {
+		display: none;
 	}
 	.filter-row .chip {
 		text-transform: capitalize;
