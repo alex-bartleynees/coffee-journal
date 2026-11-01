@@ -78,16 +78,32 @@
 			<div class="section-label">{machine.name}</div>
 			<div class="machine-options">
 				{#each machineOptions as option (option.id)}
-					<Stepper
-						label={option.label}
-						value={optionValue(option, draft.machineSettings)}
-						unit={option.unit}
-						step={option.step}
-						decimals={stepDecimals(option.step)}
-						min={option.min}
-						max={option.max}
-						onChange={(v) => (draft.machineSettings[option.id] = v)}
-					/>
+					{#if option.kind === 'toggle'}
+						{@const on = optionValue(option, draft.machineSettings) === 1}
+						<div class="field">
+							<div class="field-label">{option.label}</div>
+							<button
+								class="toggle"
+								class:on
+								onclick={() => (draft.machineSettings[option.id] = on ? 0 : 1)}
+								aria-label={option.label}
+								aria-pressed={on}
+							>
+								<span class="toggle-thumb"></span>
+							</button>
+						</div>
+					{:else}
+						<Stepper
+							label={option.label}
+							value={optionValue(option, draft.machineSettings)}
+							unit={option.unit}
+							step={option.step}
+							decimals={stepDecimals(option.step)}
+							min={option.min}
+							max={option.max}
+							onChange={(v) => (draft.machineSettings[option.id] = v)}
+						/>
+					{/if}
 				{/each}
 			</div>
 		{/if}
@@ -192,6 +208,28 @@
 		gap: 12px;
 		margin-bottom: 12px;
 	}
+	.toggle {
+		width: 44px;
+		height: 26px;
+		border-radius: 100px;
+		background: var(--line);
+		position: relative;
+		flex-shrink: 0;
+		transition: background 0.2s;
+	}
+	.toggle.on { background: var(--ink); }
+	.toggle-thumb {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: #fff;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+		transition: left 0.2s;
+	}
+	.toggle.on .toggle-thumb { left: 20px; }
 	.water-label {
 		margin-top: 16px;
 	}

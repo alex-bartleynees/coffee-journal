@@ -66,3 +66,28 @@ describe('machine form option editing', () => {
 		});
 	});
 });
+
+describe('toggle brew options', () => {
+	const manualPi: MachineBrewOption = { id: 'manual-pi', label: 'Manual pre-infusion', kind: 'toggle', min: 0, max: 1, step: 1, default: 0 };
+	const machine: Machine = { ...bdb, brewOptions: [manualPi] };
+
+	it('snapshots the toggle kind so the brew reads Yes/No', () => {
+		const [setting] = machineSettingsSnapshot(machine, { 'manual-pi': 1 });
+		expect(setting).toEqual({ optionId: 'manual-pi', label: 'Manual pre-infusion', kind: 'toggle', value: 1 });
+		expect(formatSetting(setting)).toBe('Yes');
+		expect(formatSetting({ ...setting, value: 0 })).toBe('No');
+	});
+
+	it('round-trips toggle options and settings through stored JSON', () => {
+		expect(parseBrewOptions(JSON.stringify([manualPi]))).toEqual([manualPi]);
+		const settings = machineSettingsSnapshot(machine, {});
+		expect(parseMachineSettings(JSON.stringify(settings))).toEqual(settings);
+		expect(parseBrewOptions(JSON.stringify([{ ...manualPi, kind: 'dial' }]))).toEqual([]);
+	});
+
+	it('pins the 0–1 range and drops any unit on save', () => {
+		expect(normalizeBrewOption({ ...manualPi, label: ' Manual PI ', unit: 's', max: 5, default: 3 })).toEqual({
+			...manualPi, label: 'Manual PI', default: 1
+		});
+	});
+});

@@ -38,12 +38,14 @@ export interface Recipe {
 }
 
 /**
- * A numeric setting a machine exposes per brew (e.g. pre-infusion time/power on
- * a Breville Dual Boiler). Defined on the machine, offered on the Brew step.
+ * A setting a machine exposes per brew (e.g. pre-infusion time/power on a
+ * Breville Dual Boiler). Defined on the machine, offered on the Brew step.
+ * A toggle is a yes/no option stored as a 0–1 number so it shares the numeric path.
  */
 export interface MachineBrewOption {
 	id: string;
 	label: string;
+	kind?: 'toggle';
 	unit?: string;
 	min: number;
 	max: number;
@@ -58,6 +60,7 @@ export interface MachineBrewOption {
 export interface MachineSetting {
 	optionId: string;
 	label: string;
+	kind?: 'toggle';
 	unit?: string;
 	value: number;
 }

@@ -27,6 +27,7 @@ export function machineSettingsSnapshot(
 ): MachineSetting[] {
 	return (machine?.brewOptions ?? []).map((option) => {
 		const setting: MachineSetting = { optionId: option.id, label: option.label, value: optionValue(option, values) };
+		if (option.kind) setting.kind = option.kind;
 		if (option.unit) setting.unit = option.unit;
 		return setting;
 	});
@@ -36,7 +37,8 @@ export function settingValues(settings: MachineSetting[] | undefined): Record<st
 	return Object.fromEntries((settings ?? []).map((setting) => [setting.optionId, setting.value]));
 }
 
-export function formatSetting(setting: Pick<MachineSetting, 'value' | 'unit'>): string {
+export function formatSetting(setting: Pick<MachineSetting, 'value' | 'unit' | 'kind'>): string {
+	if (setting.kind === 'toggle') return setting.value ? 'Yes' : 'No';
 	return setting.unit ? `${setting.value}${setting.unit === '%' ? '' : ' '}${setting.unit}` : String(setting.value);
 }
 
@@ -55,6 +57,7 @@ export function parseBrewOptions(raw: string | null | undefined): MachineBrewOpt
 			const o = option as Record<string, unknown>;
 			return (
 				typeof o.id === 'string' && typeof o.label === 'string' &&
+				(o.kind === undefined || o.kind === 'toggle') &&
 				(o.unit === undefined || typeof o.unit === 'string') &&
 				isFiniteNumber(o.min) && isFiniteNumber(o.max) && isFiniteNumber(o.step) && o.step > 0 &&
 				o.min <= o.max && isFiniteNumber(o.default)
@@ -75,6 +78,7 @@ export function parseMachineSettings(raw: string | null | undefined): MachineSet
 			const s = setting as Record<string, unknown>;
 			return (
 				typeof s.optionId === 'string' && typeof s.label === 'string' &&
+				(s.kind === undefined || s.kind === 'toggle') &&
 				(s.unit === undefined || typeof s.unit === 'string') && isFiniteNumber(s.value)
 			);
 		});
@@ -88,6 +92,9 @@ export const BREW_OPTION_PRESETS: readonly Omit<MachineBrewOption, 'id'>[] = [
 	{ label: 'Pre-infusion time', unit: 's', min: 0, max: 15, step: 1, default: 7 },
 	{ label: 'Pre-infusion power', unit: '%', min: 55, max: 99, step: 1, default: 60 }
 ];
+
+/** Template for a yes/no option; the 0–1 range is fixed so it never needs editing. */
+export const TOGGLE_OPTION: Omit<MachineBrewOption, 'id'> = { label: '', kind: 'toggle', min: 0, max: 1, step: 1, default: 0 };
 
 /** Whether an option being edited on the machine form can be saved. */
 export function isValidBrewOption(option: MachineBrewOption): boolean {
@@ -105,6 +112,9 @@ export function hasValidRange(option: Omit<NumericOption, 'id'>): boolean {
 
 /** Trims text and pulls the default into range before the option is saved. */
 export function normalizeBrewOption(option: MachineBrewOption): MachineBrewOption {
+	if (option.kind === 'toggle') {
+		return { ...TOGGLE_OPTION, id: option.id, label: option.label.trim(), default: option.default ? 1 : 0 };
+	}
 	const normalized: MachineBrewOption = { ...option, label: option.label.trim(), unit: option.unit?.trim() || undefined };
 	if (!normalized.unit) delete normalized.unit;
 	normalized.default = clampOptionValue(normalized, normalized.default);

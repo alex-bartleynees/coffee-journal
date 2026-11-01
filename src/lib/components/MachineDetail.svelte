@@ -37,8 +37,12 @@
 				<div class="option-row">
 					<span>{option.label}</span>
 					<span class="option-range">
-						{option.min}–{formatSetting({ value: option.max, unit: option.unit })}
-						· default {option.default}
+						{#if option.kind === 'toggle'}
+							Yes/No · default {formatSetting({ value: option.default, kind: option.kind })}
+						{:else}
+							{option.min}–{formatSetting({ value: option.max, unit: option.unit })}
+							· default {option.default}
+						{/if}
 					</span>
 				</div>
 			{/each}
