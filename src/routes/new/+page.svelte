@@ -9,6 +9,7 @@
 	import { todayIso } from '$lib/data/date';
 	import { brewEquipment, brewSelection } from '$lib/data/brew-equipment';
 	import { lastWaterChoice } from '$lib/data/water';
+	import { beanStatus } from '$lib/data/bean-filter';
 	import BeanStep from '$lib/components/new-brew/BeanStep.svelte';
 	import BrewStep from '$lib/components/new-brew/BrewStep.svelte';
 	import TasteStep from '$lib/components/new-brew/TasteStep.svelte';
@@ -17,7 +18,7 @@
 	const existingBrew = $derived(editId ? journal.brews.find((brew) => brew.id === editId) : undefined);
 
 	let tab = $state(0);
-	const draft = $state(createDraft(journal.beans[0]?.id ?? ''));
+	const draft = $state(createDraft(journal.beans.find((b) => beanStatus(b) === 'active')?.id ?? ''));
 	const selectedRecipe = $derived(draft.recipeId ? journal.recipes.find((recipe) => recipe.id === draft.recipeId) : undefined);
 	const selectedMachine = $derived(draft.machine ? journal.machines.find((machine) => machine.id === draft.machine) : undefined);
 	const selectedWater = $derived(

@@ -5,6 +5,7 @@
 	import { isMilkEspressoDrink } from '$lib/data/espresso-drinks';
 	import { compatibleRecipes } from '$lib/data/recipes';
 	import { brewEquipment } from '$lib/data/brew-equipment';
+	import { beanStatus } from '$lib/data/bean-filter';
 	import type { DraftBrew } from './DraftBrew';
 
 	interface Props {
@@ -80,12 +81,12 @@
 		<div class="section-label desktop-only">Choose a bean</div>
 		<div class="hint">Pick a bean from your library.</div>
 		<div class="bean-picker">
-			{#each beans.filter((b) => !b.finished || b.id === includeBeanId) as bean (bean.id)}
+			{#each beans.filter((b) => beanStatus(b) === 'active' || b.id === includeBeanId) as bean (bean.id)}
 				<button class="bean-option" class:selected={draft.beanId === bean.id} onclick={() => (draft.beanId = bean.id)}>
 					<span class="bean-bar" style="background:{roastColor[bean.roast]}"></span>
 					<span class="bean-option-info">
 						<span class="bean-option-name">{bean.name}</span>
-						<span class="bean-option-roaster">{bean.roaster}{bean.upcoming ? ' · Upcoming — opens on first brew' : ''}</span>
+						<span class="bean-option-roaster">{bean.roaster}</span>
 					</span>
 					{#if draft.beanId === bean.id}
 						<span class="bean-check"><Icon name="check" size={14} strokeWidth={2.4} /></span>
